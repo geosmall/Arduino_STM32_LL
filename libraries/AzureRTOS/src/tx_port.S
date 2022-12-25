@@ -1,0 +1,51 @@
+#if defined(__SAMD21G18A__)
+.cpu cortex-m0plus
+#include "../ports/bsp/samd21/tx_initialize_low_level.S"
+#include "../ports/arch/cortex_m0/tx_thread_context_restore.S"
+#include "../ports/arch/cortex_m0/tx_thread_context_save.S"
+#include "../ports/arch/cortex_m0/tx_thread_interrupt_control.S"
+#include "../ports/arch/cortex_m0/tx_thread_interrupt_disable.S"
+#include "../ports/arch/cortex_m0/tx_thread_interrupt_restore.S"
+#include "../ports/arch/cortex_m0/tx_thread_schedule.S"
+#include "../ports/arch/cortex_m0/tx_thread_stack_build.S"
+#include "../ports/arch/cortex_m0/tx_thread_system_return.S"
+#include "../ports/arch/cortex_m0/tx_timer_interrupt.S"
+#elif (defined(__SAMD51P19A__) || defined(__SAMD51J19A__))
+.cpu cortex-m4
+#include "../ports/bsp/samd51/tx_initialize_low_level.S"
+#include "../ports/arch/cortex_m4/tx_thread_context_restore.S"
+#include "../ports/arch/cortex_m4/tx_thread_context_save.S"
+#include "../ports/arch/cortex_m4/tx_thread_interrupt_control.S"
+#include "../ports/arch/cortex_m4/tx_thread_interrupt_disable.S"
+#include "../ports/arch/cortex_m4/tx_thread_interrupt_restore.S"
+#include "../ports/arch/cortex_m4/tx_thread_schedule.S"
+#include "../ports/arch/cortex_m4/tx_thread_stack_build.S"
+#include "../ports/arch/cortex_m4/tx_thread_system_return.S"
+#include "../ports/arch/cortex_m4/tx_timer_interrupt.S"
+#elif (defined(STM32F4xx) || defined(STM32L4xx))
+.cpu cortex-m4
+#include "../ports/bsp/stm32f4_l4/tx_initialize_low_level.S"
+#include "../ports/arch/cortex_m4/tx_thread_context_restore.S"
+#include "../ports/arch/cortex_m4/tx_thread_context_save.S"
+#include "../ports/arch/cortex_m4/tx_thread_interrupt_control.S"
+#include "../ports/arch/cortex_m4/tx_thread_interrupt_disable.S"
+#include "../ports/arch/cortex_m4/tx_thread_interrupt_restore.S"
+#include "../ports/arch/cortex_m4/tx_thread_schedule.S"
+#include "../ports/arch/cortex_m4/tx_thread_stack_build.S"
+#include "../ports/arch/cortex_m4/tx_thread_system_return.S"
+#include "../ports/arch/cortex_m4/tx_timer_interrupt.S"
+#elif defined(STM32F7xx)
+.cpu cortex-m7
+#include "../ports/bsp/stm32f7/tx_initialize_low_level.S"
+#include "../ports/arch/cortex_m7/tx_thread_context_restore.S"
+#include "../ports/arch/cortex_m7/tx_thread_context_save.S"
+#include "../ports/arch/cortex_m7/tx_thread_interrupt_control.S"
+#include "../ports/arch/cortex_m7/tx_thread_interrupt_disable.S"
+#include "../ports/arch/cortex_m7/tx_thread_interrupt_restore.S"
+#include "../ports/arch/cortex_m7/tx_thread_schedule.S"
+#include "../ports/arch/cortex_m7/tx_thread_stack_build.S"
+#include "../ports/arch/cortex_m7/tx_thread_system_return.S"
+#include "../ports/arch/cortex_m7/tx_timer_interrupt.S"
+#else
+#error "Microcontroller is not supported!"
+#endif
