@@ -1,6 +1,5 @@
 #if defined(ARDUINO_NUCLEO_F411RE)
 
-#include "stm32_def.h"
 #include "stm32yyxx_ll.h"
 
 #ifdef __cplusplus
@@ -11,7 +10,7 @@ extern "C" {
   * @brief System Clock Configuration
   * @retval None
   */
-WEAK void SystemClock_Config( void )
+__attribute__ ((weak)) void SystemClock_Config( void )
 {
   LL_FLASH_SetLatency( LL_FLASH_LATENCY_3 );
   while ( LL_FLASH_GetLatency() != LL_FLASH_LATENCY_3 ) {

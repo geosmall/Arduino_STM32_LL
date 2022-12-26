@@ -1,4 +1,5 @@
-#include "stm32_def.h"
+#if defined(ARDUINO_REVO_F405)
+
 #include "stm32yyxx_ll.h"
 
 #ifdef __cplusplus
@@ -9,7 +10,7 @@ extern "C" {
   * @brief System Clock Configuration
   * @retval None
   */
-WEAK void SystemClock_Config( void )
+__attribute__ ((weak)) void SystemClock_Config( void )
 {
   LL_FLASH_SetLatency(LL_FLASH_LATENCY_5);
   while(LL_FLASH_GetLatency()!= LL_FLASH_LATENCY_5)
@@ -49,3 +50,4 @@ WEAK void SystemClock_Config( void )
 }
 #endif
 
+#endif // defined(ARDUINO_REVO_F405)

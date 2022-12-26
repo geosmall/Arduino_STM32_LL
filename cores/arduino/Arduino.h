@@ -20,39 +20,15 @@
 #ifndef Arduino_h
 #define Arduino_h
 
-#ifndef GCC_VERSION
-#define GCC_VERSION (__GNUC__ * 10000 \
-                     + __GNUC_MINOR__ * 100 \
-                     + __GNUC_PATCHLEVEL__)
-#endif
-#if GCC_VERSION < 60300
-  #error "GCC version 6.3 or higher is required"
-#endif
-
-// #ifdef __IN_ECLIPSE__
-//   #include "SrcWrapper.h"
-// #endif
-
-#include "wiring.h"
-
-/* sketch */
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-// Weak empty variant initialization function.
-// May be redefined by variant files.
-// extern void initVariant() __attribute__((weak));
 
 extern void setup(void) ;
 extern void loop(void) ;
 
-void yield(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
-
-// Include pins variant
-// #include "pins_arduino.h"
 
 #endif // Arduino_h
