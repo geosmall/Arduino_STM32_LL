@@ -5,13 +5,13 @@
 # https://arduino.github.io/arduino-cli/latest/platform-specification/
 
 name=STM32 boards groups (Board to be selected from Tools submenu 'Board part number')
-version=2.0.0
+version=0.0.3
 
 # STM compile variables
 # ----------------------
 # compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/stm32/usb" "-I{build.core.path}/stm32/usb/hid" "-I{build.core.path}/stm32/usb/cdc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/{build.series}" "-I{build.system.path}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc" "-I{build.system.path}/Middlewares/ST/STM32_USB_Device_Library/Core/Src"
 
-compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/uvos_inc" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/libraries/inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/{build.series}"
+compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/uvos" "-I{build.core.path}/uvos/uvos_inc" "-I{build.core.path}/uvos/libraries/inc" "-I{build.system.path}/{build.series}" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/uvos_hal/{build.series}"
 
 compiler.warning_flags=-w
 compiler.warning_flags.none=-w
