@@ -11,7 +11,7 @@ version=2.0.0
 # ----------------------
 # compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/stm32/usb" "-I{build.core.path}/stm32/usb/hid" "-I{build.core.path}/stm32/usb/cdc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/{build.series}" "-I{build.system.path}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc" "-I{build.system.path}/Middlewares/ST/STM32_USB_Device_Library/Core/Src"
 
-compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/inc" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/libraries/inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/{build.series}"
+compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/uvos_inc" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/libraries/inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/{build.series}"
 
 compiler.warning_flags=-w
 compiler.warning_flags.none=-w
@@ -108,7 +108,7 @@ build.opt.path={build.path}/sketch/{build.opt.name}
 
 extras.path={build.system.path}/extras
 
-# Create empty {build.opt} if not exists in the output sketch dir and force include of SrcWrapper library
+# Create empty {build.opt} if not exists in the output sketch dir
 recipe.hooks.prebuild.1.pattern="{extras.path}/prebuild.sh" "{build.path}" "{build.source.path}"
 recipe.hooks.prebuild.1.pattern.windows="{runtime.tools.STM32Tools.path}/win/busybox.exe" sh "{extras.path}/prebuild.sh" "{build.path}" "{build.source.path}"
 
