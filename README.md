@@ -30,41 +30,41 @@ ADCv2
 CANv1
 CRYPv1
 DACv1
-# DMAv2
+**DMAv2**
 EXTIv1
 GPIOv2
-# I2Cv2
+**I2Cv2**
 MACv1
 OTGv1
 QUADSPIv1
-# RNGv1
+**RNGv1**
 RTCv2
-# SPIv2
-# SDMMCv1
+**SPIv2**
+**SDMMCv1**
 SYSTICKv1
 TIMv1
-# USARTv2
+**USARTv2**
 xWDGv1
 
 # Peripheral versions for STM32H7 platform.
-# ADCv4
-# BDMAv1
+**ADCv4**
+**BDMAv1**
 CRYPv1
 DACv1
 DMAv2
 EXTIv1
-# FDCANv1
+**FDCANv1**
 GPIOv2
-# I2Cv3
-# MACv2
-# MDMAv1
+**I2Cv3**
+**MACv2**
+**MDMAv1**
 OTGv1
 QUADSPIv2
-# SDMMCv2
-# SPIv3
+**SDMMCv2**
+**SPIv3**
 RNGv1
 RTCv2
 SYSTICKv1
 TIMv1
-# USARTv3
+**USARTv3**
 xWDGv1
