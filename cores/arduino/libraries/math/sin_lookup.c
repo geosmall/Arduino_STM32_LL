@@ -1,7 +1,6 @@
-#include "math.h"
-#include "stdbool.h"
-#include "stdint.h"
-// #include <pios_math.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #define FLASH_TABLE
 #ifdef FLASH_TABLE

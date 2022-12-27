@@ -1,4 +1,3 @@
-
 #include "shell.h"
 
 // https://github.com/memfault/interrupt/tree/master/example/firmware-shell/complex/shell

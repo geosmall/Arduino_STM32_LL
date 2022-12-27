@@ -1,6 +1,6 @@
-#include "pid.h"
-#include <mathmisc.h>
 #include <uvos_math.h>
+#include "mathmisc.h"
+#include "pid.h"
 
 // ! Store the shared time constant for the derivative cutoff.
 static float deriv_tau   = 7.9577e-3f;
