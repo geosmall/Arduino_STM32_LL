@@ -1,18 +1,4 @@
 #include <uvos.h>
-// #include <uvos_board_info.h>
-
-// #include <uavobjectsinit.h>
-// #include <hwsettings.h>
-// #include <manualcontrolsettings.h>
-// #include <oplinksettings.h>
-// #include <oplinkstatus.h>
-// #include <oplinkreceiver.h>
-// #include <uvos_oplinkrcvr_priv.h>
-// #include <uvos_openlrs.h>
-// #include <uvos_openlrs_rcvr_priv.h>
-// #include <taskinfo.h>
-// #include <uvos_ws2811.h>
-// #include <auxmagsettings.h>
 
 #ifdef UVOS_INCLUDE_INSTRUMENTATION
 #include <uvos_instrumentation.h>
