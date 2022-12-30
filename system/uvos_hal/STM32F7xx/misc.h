@@ -1,23 +1,3 @@
-/**
-  ******************************************************************************
-  * @file    misc.h
-  * @author  MCD Application Team
-  * @version V1.8.1
-  * @date    27-January-2022
-  * @brief   This file contains all the functions prototypes for the miscellaneous
-  *          firmware library functions (add-on to CMSIS functions).
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2016 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MISC_H
@@ -28,9 +8,9 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx.h"
+#include "stm32f7xx.h"
 
-/** @addtogroup STM32F4xx_StdPeriph_Driver
+/** @addtogroup STM32F7xx_StdPeriph_Driver
   * @{
   */
 
@@ -49,7 +29,7 @@ typedef struct
   uint8_t NVIC_IRQChannel;                    /*!< Specifies the IRQ channel to be enabled or disabled.
                                                    This parameter can be an enumerator of @ref IRQn_Type 
                                                    enumeration (For the complete STM32 Devices IRQ Channels
-                                                   list, please refer to stm32f4xx.h file) */
+                                                   list, please refer to stm32f7xx.h file) */
 
   uint8_t NVIC_IRQChannelPreemptionPriority;  /*!< Specifies the pre-emption priority for the IRQ channel
                                                    specified in NVIC_IRQChannel. This parameter can be a value
@@ -65,7 +45,7 @@ typedef struct
                                                    will be enabled or disabled. 
                                                    This parameter can be set either to ENABLE or DISABLE */   
 } NVIC_InitTypeDef;
- 
+
 /* Exported constants --------------------------------------------------------*/
 
 /** @defgroup MISC_Exported_Constants
@@ -76,8 +56,8 @@ typedef struct
   * @{
   */
 
-#define NVIC_VectTab_RAM             ((uint32_t)0x20000000)
-#define NVIC_VectTab_FLASH           ((uint32_t)0x08000000)
+#define NVIC_VectTab_RAM             ((uint32_t)SRAM1_BASE)
+#define NVIC_VectTab_FLASH           ((uint32_t)FLASH_BASE)
 #define IS_NVIC_VECTTAB(VECTTAB) (((VECTTAB) == NVIC_VectTab_RAM) || \
                                   ((VECTTAB) == NVIC_VectTab_FLASH))
 /**
@@ -88,9 +68,9 @@ typedef struct
   * @{
   */
 
-#define NVIC_LP_SEVONPEND            ((uint8_t)0x10)
-#define NVIC_LP_SLEEPDEEP            ((uint8_t)0x04)
-#define NVIC_LP_SLEEPONEXIT          ((uint8_t)0x02)
+#define NVIC_LP_SEVONPEND            ((uint8_t)SCB_SCR_SEVONPEND_Msk)
+#define NVIC_LP_SLEEPDEEP            ((uint8_t)SCB_SCR_SLEEPDEEP_Msk)
+#define NVIC_LP_SLEEPONEXIT          ((uint8_t)SCB_SCR_SLEEPONEXIT_Msk)
 #define IS_NVIC_LP(LP) (((LP) == NVIC_LP_SEVONPEND) || \
                         ((LP) == NVIC_LP_SLEEPDEEP) || \
                         ((LP) == NVIC_LP_SLEEPONEXIT))
@@ -128,6 +108,7 @@ typedef struct
 /**
   * @}
   */
+
 
 /** @defgroup MISC_SysTick_clock_source 
   * @{
@@ -168,4 +149,3 @@ void DMA_ClearFlags(DMA_TypeDef * DMAx, uint32_t DMA_flags);
 /**
   * @}
   */
-

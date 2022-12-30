@@ -35,10 +35,6 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE.build.variant=STM32F4xx/F411R(C-E)T
 Nucleo_64.menu.pnum.NUCLEO_F411RE.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
 # Upload menu
-Nucleo_64.menu.upload_method.MassStorage=Mass Storage
-Nucleo_64.menu.upload_method.MassStorage.upload.protocol=
-Nucleo_64.menu.upload_method.MassStorage.upload.tool=massStorageCopy
-
 Nucleo_64.menu.upload_method.swdMethod=STM32CubeProgrammer (SWD)
 Nucleo_64.menu.upload_method.swdMethod.upload.protocol=0
 Nucleo_64.menu.upload_method.swdMethod.upload.options=-g
@@ -368,7 +364,9 @@ GenH7.menu.xusb.HSFS=High Speed in Full Speed mode
 GenH7.menu.xusb.HSFS.build.usb_speed=-DUSE_USB_HS -DUSE_USB_HS_IN_FS
 
 # Optimizations
-Nucleo_64.menu.opt.osstd=Smallest (-Os default)
+Nucleo_64.menu.opt.ogstd=Debug (-g default)
+Nucleo_64.menu.opt.ogstd.build.flags.optimize=-g -Og
+Nucleo_64.menu.opt.osstd=Smallest (-Os)
 Nucleo_64.menu.opt.oslto=Smallest (-Os) with LTO
 Nucleo_64.menu.opt.oslto.build.flags.optimize=-Os -flto
 Nucleo_64.menu.opt.o1std=Fast (-O1)
@@ -383,10 +381,10 @@ Nucleo_64.menu.opt.o3std=Fastest (-O3)
 Nucleo_64.menu.opt.o3std.build.flags.optimize=-O3
 Nucleo_64.menu.opt.o3lto=Fastest (-O3) with LTO
 Nucleo_64.menu.opt.o3lto.build.flags.optimize=-O3 -flto
-Nucleo_64.menu.opt.ogstd=Debug (-g)
-Nucleo_64.menu.opt.ogstd.build.flags.optimize=-g -Og
 
-GenF4.menu.opt.osstd=Smallest (-Os default)
+GenF4.menu.opt.ogstd=Debug (-g default)
+GenF4.menu.opt.ogstd.build.flags.optimize=-g -Og
+GenF4.menu.opt.osstd=Smallest (-Os)
 GenF4.menu.opt.osstd.build.flags.optimize=-Os
 GenF4.menu.opt.oslto=Smallest (-Os) with LTO
 GenF4.menu.opt.oslto.build.flags.optimize=-Os -flto
@@ -402,10 +400,10 @@ GenF4.menu.opt.o3std=Fastest (-O3)
 GenF4.menu.opt.o3std.build.flags.optimize=-O3
 GenF4.menu.opt.o3lto=Fastest (-O3) with LTO
 GenF4.menu.opt.o3lto.build.flags.optimize=-O3 -flto
-GenF4.menu.opt.ogstd=Debug (-g)
-GenF4.menu.opt.ogstd.build.flags.optimize=-g -Og
 
-GenF7.menu.opt.osstd=Smallest (-Os default)
+GenF7.menu.opt.ogstd=Debug (-g default)
+GenF7.menu.opt.ogstd.build.flags.optimize=-g -Og
+GenF7.menu.opt.osstd=Smallest (-Os)
 GenF7.menu.opt.osstd.build.flags.optimize=-Os
 GenF7.menu.opt.oslto=Smallest (-Os) with LTO
 GenF7.menu.opt.oslto.build.flags.optimize=-Os -flto
@@ -421,10 +419,10 @@ GenF7.menu.opt.o3std=Fastest (-O3)
 GenF7.menu.opt.o3std.build.flags.optimize=-O3
 GenF7.menu.opt.o3lto=Fastest (-O3) with LTO
 GenF7.menu.opt.o3lto.build.flags.optimize=-O3 -flto
-GenF7.menu.opt.ogstd=Debug (-g)
-GenF7.menu.opt.ogstd.build.flags.optimize=-g -Og
 
-GenH7.menu.opt.osstd=Smallest (-Os default)
+GenH7.menu.opt.ogstd=Debug (-g default)
+GenH7.menu.opt.ogstd.build.flags.optimize=-g -Og
+GenH7.menu.opt.osstd=Smallest (-Os)
 GenH7.menu.opt.oslto=Smallest (-Os) with LTO
 GenH7.menu.opt.oslto.build.flags.optimize=-Os -flto
 GenH7.menu.opt.o1std=Fast (-O1)
@@ -439,8 +437,7 @@ GenH7.menu.opt.o3std=Fastest (-O3)
 GenH7.menu.opt.o3std.build.flags.optimize=-O3
 GenH7.menu.opt.o3lto=Fastest (-O3) with LTO
 GenH7.menu.opt.o3lto.build.flags.optimize=-O3 -flto
-GenH7.menu.opt.ogstd=Debug (-g)
-GenH7.menu.opt.ogstd.build.flags.optimize=-g -Og
+
 
 # C Runtime Library
 Nucleo_64.menu.rtlib.nano=Newlib Nano (default)
