@@ -22,6 +22,7 @@ static uint8_t *uvos_servo_pin_bank;
 
 #define UVOS_SERVO_TIMER_CLOCK 1000000
 #define UVOS_SERVO_SAFE_MARGIN 50
+
 /**
  * Initialise Servos
  */
@@ -108,7 +109,7 @@ int32_t UVOS_Servo_Init( const struct uvos_servo_cfg *cfg )
 /**
   * @brief  Set the servo bank mode
   * @param  bank servo bank member to set
-  * @param  mode enum  UVOS_SERVO_BANK_MODE_PWM, UVOS_SERVO_BANK_MODE_SINGLE_PULSE
+  * @param  mode enum UVOS_SERVO_BANK_MODE_PWM, UVOS_SERVO_BANK_MODE_SINGLE_PULSE
   * @retval None
   */
 void UVOS_Servo_SetBankMode( uint8_t bank, uvos_servo_bank_mode_e mode )
@@ -240,16 +241,16 @@ void UVOS_Servo_SetHz( const uint16_t *speeds, const uint32_t *clock, uint8_t ba
 
 /**
  * Set servo position
- * \param[in] Servo Servo number (0-7)
+ * \param[in] Servo Servo number (0-UVOS_SERVOPORT_ALL_PINS_PWMOUT_XX from board_hw_defs.c.inc)
  * \param[in] Position Servo position in microseconds
+ * \return < 0 if operation failed
  */
-void UVOS_Servo_Set( uint8_t servo, uint16_t position )
+int32_t UVOS_Servo_Set( uint8_t servo, uint16_t position )
 {
   /* Make sure servo exists */
   if ( !servo_cfg || servo >= servo_cfg->num_channels ) {
-    return;
+    return -1;
   }
-
 
   /* Update the position */
   const struct uvos_tim_channel *chan = &servo_cfg->channels[ servo ];
@@ -277,6 +278,7 @@ void UVOS_Servo_Set( uint8_t servo, uint16_t position )
     LL_TIM_OC_SetCompareCH4( chan->timer, val );
     break;
   }
+  return 0;
 }
 
 uint8_t UVOS_Servo_GetPinBank( uint8_t pin )

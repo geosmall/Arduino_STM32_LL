@@ -184,7 +184,7 @@ extern uint32_t uvos_packet_handler;
 
 // Calculated as SYSCLK / APBPresc * (APBPre == 1 ? 1 : 2)
 // Default APB1 Prescaler = 2
-#define UVOS_PERIPHERAL_APB1_CLOCK UVOS_SYSCLK
+#define UVOS_PERIPHERAL_APB1_CLOCK   UVOS_SYSCLK
 
 // Peripherals belonging to APB2
 // SDIO     |EXTI       |SYSCFG     |SPI1
@@ -284,7 +284,7 @@ extern uint32_t uvos_packet_handler;
 // -------------------------
 #define UVOS_SERVO_UPDATE_HZ         50
 #define UVOS_SERVOS_INITIAL_POSITION 0 /* dont want to start motors, have no pulse till settings loaded */
-#define UVOS_SERVO_BANKS             6
+#define UVOS_SERVO_BANKS             2
 
 // --------------------------
 // Timer controller settings

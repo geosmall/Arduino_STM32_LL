@@ -9,7 +9,7 @@ typedef enum uvos_servo_bank_mode {
 
 /* Public Functions */
 extern void UVOS_Servo_SetHz( const uint16_t * speeds, const uint32_t * clock, uint8_t banks );
-extern void UVOS_Servo_Set( uint8_t Servo, uint16_t Position );
+extern int32_t UVOS_Servo_Set( uint8_t Servo, uint16_t Position );
 extern void UVOS_Servo_Update();
 extern void UVOS_Servo_SetBankMode( uint8_t bank, uvos_servo_bank_mode_e mode );
 extern uint8_t UVOS_Servo_GetPinBank( uint8_t pin );
