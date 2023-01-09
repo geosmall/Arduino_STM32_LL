@@ -10,7 +10,7 @@ extern "C" {
   * @brief System Clock Configuration
   * @retval None
   */
-__attribute__ ((weak)) void SystemClock_Config( void )
+void SystemClock_Config( void )
 {
   LL_FLASH_SetLatency( LL_FLASH_LATENCY_3 );
   while ( LL_FLASH_GetLatency() != LL_FLASH_LATENCY_3 ) {
@@ -23,6 +23,7 @@ __attribute__ ((weak)) void SystemClock_Config( void )
   while ( LL_RCC_HSE_IsReady() != 1 ) {
 
   }
+  LL_PWR_EnableBkUpAccess();
   LL_RCC_PLL_ConfigDomain_SYS( LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_4, 96, LL_RCC_PLLP_DIV_2 );
   LL_RCC_PLL_Enable();
 
