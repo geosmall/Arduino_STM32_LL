@@ -21,12 +21,12 @@
 #include "uvos_mpu.h"
 // #include "uvos_mpu_config.h"
 
+#if defined( UVOS_INCLUDE_EXTI )
+
 bool UVOS_USER_BTN_IRQHandler( void )
 {
   return true;
 }
-
-#if defined( UVOS_INCLUDE_EXTI )
 
 static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
   .vector = UVOS_USER_BTN_IRQHandler,
@@ -191,7 +191,7 @@ static void UVOS_Board_configure_ibus( const struct uvos_usart_cfg *usart_cfg )
  * initializes all the core subsystems on this specific hardware
  * called from uavware.c
  */
-uint32_t UVOS_Board_Init( void )
+WEAK uint32_t UVOS_Board_Init( void )
 {
 
 #if defined( UVOS_INCLUDE_LED )
@@ -286,7 +286,7 @@ uint32_t UVOS_Board_Init( void )
 #endif
 
 #if defined( UVOS_INCLUDE_IBUS )
-  UVOS_Board_configure_ibus( &uvos_usart_ibus_flexi_cfg );
+  UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
 #if !defined( UVOS_ENABLE_DEBUG_PINS )

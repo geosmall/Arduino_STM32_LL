@@ -172,6 +172,16 @@ tools.stm32CubeProg.upload.params.verbose=
 tools.stm32CubeProg.upload.params.quiet=
 tools.stm32CubeProg.upload.pattern="{path}/{cmd}" {upload.protocol} "{build.path}/{build.project_name}.bin" {upload.options}
 
+# JLink Programmer upload
+tools.jlink_upload.cmd=jlink_upload.sh
+tools.jlink_upload.cmd.windows=jlink_upload.bat
+tools.jlink_upload.path.linux={runtime.tools.STM32Tools.path}/linux
+tools.jlink_upload.path.macosx={runtime.tools.STM32Tools.path}/macosx
+tools.jlink_upload.path.windows={runtime.tools.STM32Tools.path}/win
+tools.jlink_upload.upload.params.verbose=-v0
+tools.jlink_upload.upload.params.quiet=-v1
+tools.jlink_upload.upload.pattern="{path}/{cmd}" {upload.protocol} {upload.device} "{build.path}/{build.project_name}.elf" {upload.options}
+
 # blackmagic upload for generic STM32
 tools.bmp_upload.cmd=arm-none-eabi-gdb
 tools.bmp_upload.path={runtime.tools.xpack-arm-none-eabi-gcc.path}/bin

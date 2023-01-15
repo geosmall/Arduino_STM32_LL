@@ -1,4 +1,4 @@
-#if defined(ARDUINO_REVO_F405)
+#if defined(ARDUINO_NUCLEO_F405RG)
 
 #include "stm32yyxx_ll.h"
 
@@ -10,7 +10,7 @@ extern "C" {
   * @brief System Clock Configuration
   * @retval None
   */
-__attribute__ ((weak)) void SystemClock_Config( void )
+void SystemClock_Config(void)
 {
   LL_FLASH_SetLatency(LL_FLASH_LATENCY_5);
   while(LL_FLASH_GetLatency()!= LL_FLASH_LATENCY_5)
@@ -24,6 +24,7 @@ __attribute__ ((weak)) void SystemClock_Config( void )
   {
 
   }
+  LL_PWR_EnableBkUpAccess();
   LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_4, 168, LL_RCC_PLLP_DIV_2);
   LL_RCC_PLL_Enable();
 
@@ -50,4 +51,4 @@ __attribute__ ((weak)) void SystemClock_Config( void )
 }
 #endif
 
-#endif // defined(ARDUINO_REVO_F405)
+#endif // defined(ARDUINO_NUCLEO_F405RG)

@@ -1,5 +1,7 @@
 #pragma once
 
+#define WEAK __attribute__ ((weak))
+
 #ifdef __cplusplus
 extern "C" {
 #endif

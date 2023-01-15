@@ -12,6 +12,44 @@ menu.rtlib=C Runtime Library
 menu.upload_method=Upload method
 
 ################################################################################
+# Flight Controller boards
+
+Flight_ctrl.name=Flight Controllers
+
+Flight_ctrl.build.core=arduino
+Flight_ctrl.build.board=Flight_ctrl
+Flight_ctrl.build.variant_h=variant_{build.board}.h
+Flight_ctrl.build.extra_flags=-D{build.product_line} {build.enable_usb} {build.xSerial}
+
+# REVO_F405RG board
+Flight_ctrl.menu.pnum.REVO_F405RG=Revo F405RG
+Flight_ctrl.menu.pnum.REVO_F405RG.upload.maximum_size=1048576
+Flight_ctrl.menu.pnum.REVO_F405RG.upload.maximum_data_size=131072
+Flight_ctrl.menu.pnum.REVO_F405RG.build.mcu=cortex-m4
+Flight_ctrl.menu.pnum.REVO_F405RG.build.flags.fp=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
+Flight_ctrl.menu.pnum.REVO_F405RG.build.board=REVO_F405RG
+Flight_ctrl.menu.pnum.REVO_F405RG.build.series=STM32F4xx
+Flight_ctrl.menu.pnum.REVO_F405RG.build.product_line=STM32F405xx
+Flight_ctrl.menu.pnum.REVO_F405RG.build.variant=FCs/REVO_F405RG
+Flight_ctrl.menu.pnum.REVO_F405RG.build.cmsis_lib_gcc=arm_cortexM4lf_math
+
+# Upload menu
+Flight_ctrl.menu.upload_method.swdMethod=STM32CubeProgrammer (SWD)
+Flight_ctrl.menu.upload_method.swdMethod.upload.protocol=0
+Flight_ctrl.menu.upload_method.swdMethod.upload.options=-g
+Flight_ctrl.menu.upload_method.swdMethod.upload.tool=stm32CubeProg
+
+Flight_ctrl.menu.upload_method.serialMethod=STM32CubeProgrammer (Serial)
+Flight_ctrl.menu.upload_method.serialMethod.upload.protocol=1
+Flight_ctrl.menu.upload_method.serialMethod.upload.options={serial.port.file} -s
+Flight_ctrl.menu.upload_method.serialMethod.upload.tool=stm32CubeProg
+
+Flight_ctrl.menu.upload_method.dfuMethod=STM32CubeProgrammer (DFU)
+Flight_ctrl.menu.upload_method.dfuMethod.upload.protocol=2
+Flight_ctrl.menu.upload_method.dfuMethod.upload.options=-g
+Flight_ctrl.menu.upload_method.dfuMethod.upload.tool=stm32CubeProg
+
+################################################################################
 # Nucleo 64 boards
 
 Nucleo_64.name=Nucleo-64
@@ -34,6 +72,19 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE.build.product_line=STM32F411xE
 Nucleo_64.menu.pnum.NUCLEO_F411RE.build.variant=STM32F4xx/F411R(C-E)T
 Nucleo_64.menu.pnum.NUCLEO_F411RE.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
+# NUCLEO_F405RG board
+Nucleo_64.menu.pnum.NUCLEO_F405RG=Nucleo F405RG
+Nucleo_64.menu.pnum.NUCLEO_F405RG.node="NODE_F405RG,NUCLEO"
+Nucleo_64.menu.pnum.NUCLEO_F405RG.upload.maximum_size=1048576
+Nucleo_64.menu.pnum.NUCLEO_F405RG.upload.maximum_data_size=131072
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.mcu=cortex-m4
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.flags.fp=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.board=NUCLEO_F405RG
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.series=STM32F4xx
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.product_line=STM32F405xx
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.variant=STM32F4xx/F405RGT_F415RGT
+Nucleo_64.menu.pnum.NUCLEO_F405RG.build.cmsis_lib_gcc=arm_cortexM4lf_math
+
 # Upload menu
 Nucleo_64.menu.upload_method.swdMethod=STM32CubeProgrammer (SWD)
 Nucleo_64.menu.upload_method.swdMethod.upload.protocol=0
@@ -49,6 +100,16 @@ Nucleo_64.menu.upload_method.dfuMethod=STM32CubeProgrammer (DFU)
 Nucleo_64.menu.upload_method.dfuMethod.upload.protocol=2
 Nucleo_64.menu.upload_method.dfuMethod.upload.options=-g
 Nucleo_64.menu.upload_method.dfuMethod.upload.tool=stm32CubeProg
+
+Nucleo_64.menu.upload_method.bmpMethod=BMP (Black Magic Probe)
+Nucleo_64.menu.upload_method.bmpMethod.upload.protocol=gdb_bmp
+Nucleo_64.menu.upload_method.bmpMethod.upload.tool=bmp_upload
+
+Nucleo_64.menu.upload_method.jlinkMethod=JLink Programmer
+Nucleo_64.menu.upload_method.jlinkMethod.upload.device=STM32F405RG
+Nucleo_64.menu.upload_method.jlinkMethod.upload.protocol=SWD
+Nucleo_64.menu.upload_method.jlinkMethod.upload.options=-g
+Nucleo_64.menu.upload_method.jlinkMethod.upload.tool=jlink_upload
 
 ################################################################################
 # Generic F4
@@ -288,6 +349,12 @@ GenH7.menu.upload_method.dfuMethod.upload.tool=stm32CubeProg
 ################################################################################
 # Serialx activation
 
+Flight_ctrl.menu.xserial.generic=Enabled (generic 'Serial')
+Flight_ctrl.menu.xserial.none=Enabled (no generic 'Serial')
+Flight_ctrl.menu.xserial.none.build.xSerial=-DHAL_UART_MODULE_ENABLED -DHWSERIAL_NONE
+Flight_ctrl.menu.xserial.disabled=Disabled (No Serial support)
+Flight_ctrl.menu.xserial.disabled.build.xSerial=
+
 Nucleo_64.menu.xserial.generic=Enabled (generic 'Serial')
 Nucleo_64.menu.xserial.none=Enabled (no generic 'Serial')
 Nucleo_64.menu.xserial.none.build.xSerial=-DHAL_UART_MODULE_ENABLED -DHWSERIAL_NONE
@@ -313,6 +380,19 @@ GenH7.menu.xserial.disabled=Disabled (No Serial support)
 GenH7.menu.xserial.disabled.build.xSerial=
 
 # USB connectivity
+Flight_ctrl.menu.usb.none=None
+Flight_ctrl.menu.usb.CDCgen=CDC (generic 'Serial' supersede U(S)ART)
+Flight_ctrl.menu.usb.CDCgen.build.enable_usb={build.usb_flags} -DUSBD_USE_CDC
+Flight_ctrl.menu.usb.CDC=CDC (no generic 'Serial')
+Flight_ctrl.menu.usb.CDC.build.enable_usb={build.usb_flags} -DUSBD_USE_CDC -DDISABLE_GENERIC_SERIALUSB
+Flight_ctrl.menu.usb.HID=HID (keyboard and mouse)
+Flight_ctrl.menu.usb.HID.build.enable_usb={build.usb_flags} -DUSBD_USE_HID_COMPOSITE
+Flight_ctrl.menu.xusb.FS=Low/Full Speed
+Flight_ctrl.menu.xusb.HS=High Speed
+Flight_ctrl.menu.xusb.HS.build.usb_speed=-DUSE_USB_HS
+Flight_ctrl.menu.xusb.HSFS=High Speed in Full Speed mode
+Flight_ctrl.menu.xusb.HSFS.build.usb_speed=-DUSE_USB_HS -DUSE_USB_HS_IN_FS
+
 Nucleo_64.menu.usb.none=None
 Nucleo_64.menu.usb.CDCgen=CDC (generic 'Serial' supersede U(S)ART)
 Nucleo_64.menu.usb.CDCgen.build.enable_usb={build.usb_flags} -DUSBD_USE_CDC
@@ -364,6 +444,24 @@ GenH7.menu.xusb.HSFS=High Speed in Full Speed mode
 GenH7.menu.xusb.HSFS.build.usb_speed=-DUSE_USB_HS -DUSE_USB_HS_IN_FS
 
 # Optimizations
+Flight_ctrl.menu.opt.ogstd=Debug (-g default)
+Flight_ctrl.menu.opt.ogstd.build.flags.optimize=-g -Og
+Flight_ctrl.menu.opt.osstd=Smallest (-Os)
+Flight_ctrl.menu.opt.oslto=Smallest (-Os) with LTO
+Flight_ctrl.menu.opt.oslto.build.flags.optimize=-Os -flto
+Flight_ctrl.menu.opt.o1std=Fast (-O1)
+Flight_ctrl.menu.opt.o1std.build.flags.optimize=-O1
+Flight_ctrl.menu.opt.o1lto=Fast (-O1) with LTO
+Flight_ctrl.menu.opt.o1lto.build.flags.optimize=-O1 -flto
+Flight_ctrl.menu.opt.o2std=Faster (-O2)
+Flight_ctrl.menu.opt.o2std.build.flags.optimize=-O2
+Flight_ctrl.menu.opt.o2lto=Faster (-O2) with LTO
+Flight_ctrl.menu.opt.o2lto.build.flags.optimize=-O2 -flto
+Flight_ctrl.menu.opt.o3std=Fastest (-O3)
+Flight_ctrl.menu.opt.o3std.build.flags.optimize=-O3
+Flight_ctrl.menu.opt.o3lto=Fastest (-O3) with LTO
+Flight_ctrl.menu.opt.o3lto.build.flags.optimize=-O3 -flto
+
 Nucleo_64.menu.opt.ogstd=Debug (-g default)
 Nucleo_64.menu.opt.ogstd.build.flags.optimize=-g -Og
 Nucleo_64.menu.opt.osstd=Smallest (-Os)
@@ -438,8 +536,17 @@ GenH7.menu.opt.o3std.build.flags.optimize=-O3
 GenH7.menu.opt.o3lto=Fastest (-O3) with LTO
 GenH7.menu.opt.o3lto.build.flags.optimize=-O3 -flto
 
-
 # C Runtime Library
+Flight_ctrl.menu.rtlib.nano=Newlib Nano (default)
+Flight_ctrl.menu.rtlib.nanofp=Newlib Nano + Float Printf
+Flight_ctrl.menu.rtlib.nanofp.build.flags.ldspecs=--specs=nano.specs -u _printf_float
+Flight_ctrl.menu.rtlib.nanofs=Newlib Nano + Float Scanf
+Flight_ctrl.menu.rtlib.nanofs.build.flags.ldspecs=--specs=nano.specs -u _scanf_float
+Flight_ctrl.menu.rtlib.nanofps=Newlib Nano + Float Printf/Scanf
+Flight_ctrl.menu.rtlib.nanofps.build.flags.ldspecs=--specs=nano.specs -u _printf_float -u _scanf_float
+Flight_ctrl.menu.rtlib.full=Newlib Standard
+Flight_ctrl.menu.rtlib.full.build.flags.ldspecs=
+
 Nucleo_64.menu.rtlib.nano=Newlib Nano (default)
 Nucleo_64.menu.rtlib.nanofp=Newlib Nano + Float Printf
 Nucleo_64.menu.rtlib.nanofp.build.flags.ldspecs=--specs=nano.specs -u _printf_float

@@ -1,3 +1,27 @@
+#define MAIN_USART_REGS                  USART1
+// #define MAIN_USART_REMAP                 GPIO_AF_USART2
+// #define MAIN_USART_IRQ                   USART2_IRQn
+// #define MAIN_USART_RX_GPIO               GPIOA
+// #define MAIN_USART_RX_PIN                GPIO_Pin_3
+// #define MAIN_USART_TX_GPIO               GPIOA
+// #define MAIN_USART_TX_PIN                GPIO_Pin_2
+// Inverter for SBUS handling
+// #define MAIN_USART_INVERTER_GPIO         GPIOC
+// #define MAIN_USART_INVERTER_PIN          GPIO_Pin_15
+// #define MAIN_USART_INVERTER_CLOCK_FUNC   RCC_AHB1PeriphClockCmd
+// #define MAIN_USART_INVERTER_CLOCK_PERIPH RCC_AHB1Periph_GPIOC
+
+#define FLEXI_USART_REGS                 USART3
+// #define FLEXI_USART_REMAP                GPIO_AF_USART1
+// #define FLEXI_USART_IRQ                  USART1_IRQn
+// #define FLEXI_USART_RX_GPIO              GPIOB
+// #define FLEXI_USART_RX_PIN               GPIO_Pin_7
+// #define FLEXI_USART_TX_GPIO              GPIOB
+// #define FLEXI_USART_TX_PIN               GPIO_Pin_6
+// ReceiverPort pin 3
+// #define FLEXI_USART_DTR_GPIO             GPIOB
+// #define FLEXI_USART_DTR_PIN              GPIO_Pin_10
+
 #if defined(UVOS_INCLUDE_LED)
 
 #include <uvos_led_priv.h>
@@ -6,7 +30,7 @@ static const struct uvos_gpio uvos_leds[] = {
     .pin               =             {
       .gpio = GPIOB,
       .init =             {
-        .Pin   = LL_GPIO_PIN_12,
+        .Pin   = LL_GPIO_PIN_5,
         .Speed = LL_GPIO_SPEED_FREQ_LOW,
         .Mode  = LL_GPIO_MODE_OUTPUT,
         .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -19,7 +43,7 @@ static const struct uvos_gpio uvos_leds[] = {
     .pin               =             {
       .gpio = GPIOB,
       .init =             {
-        .Pin   = LL_GPIO_PIN_6,
+        .Pin   = LL_GPIO_PIN_4,
         .Speed = LL_GPIO_SPEED_FREQ_LOW,
         .Mode  = LL_GPIO_MODE_OUTPUT,
         .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -41,7 +65,7 @@ static const struct uvos_gpio_cfg uvos_led_cfg = {
 #include <uvos_spi_priv.h>
 
 /*
- * SPI1 Interface
+ * Gyro SPI Interface
  * Used for MPU6000 gyro and accelerometer
  */
 void UVOS_SPI_gyro_irq_handler( void );
@@ -172,7 +196,7 @@ void UVOS_SPI_gyro_irq_handler( void )
 }
 
 /*
- * SPI2 Interface
+ * Flash SPI Interface
  * Used for Flash chip
  */
 void UVOS_SPI_telem_flash_irq_handler( void );
@@ -198,7 +222,7 @@ static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
       // Note this is the stream ID that triggers interrupts (in this case RX)
       .flags = ( DMA_LISR_TCIF0 | DMA_LISR_TEIF0 | DMA_LISR_HTIF0 ),
       .init  = {
-        .NVIC_IRQChannel    = DMA1_Stream3_IRQn,
+        .NVIC_IRQChannel    = DMA1_Stream0_IRQn,
         .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd = ENABLE,
@@ -210,7 +234,7 @@ static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
       .stream = LL_DMA_STREAM_0,
       .init    = {
         .Channel = LL_DMA_CHANNEL_0,
-        .PeriphOrM2MSrcAddress = ( uint32_t ) & ( SPI2->DR ),
+        .PeriphOrM2MSrcAddress = ( uint32_t ) & ( SPI3->DR ),
         .MemoryOrM2MDstAddress = ( uint32_t ) NULL,
         .Direction = LL_DMA_DIRECTION_PERIPH_TO_MEMORY,
         .Mode = LL_DMA_MODE_NORMAL,
@@ -231,7 +255,7 @@ static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
       .stream = LL_DMA_STREAM_5,
       .init    = {
         .Channel = LL_DMA_CHANNEL_0,
-        .PeriphOrM2MSrcAddress = ( uint32_t ) & ( SPI2->DR ),
+        .PeriphOrM2MSrcAddress = ( uint32_t ) & ( SPI3->DR ),
         .MemoryOrM2MDstAddress = ( uint32_t ) NULL,
         .Direction = LL_DMA_DIRECTION_MEMORY_TO_PERIPH,
         .Mode = LL_DMA_MODE_NORMAL,
@@ -435,7 +459,7 @@ static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
 
 #if defined(UVOS_INCLUDE_IBUS)
 /*
- * IBUS on Flexi Port USART
+ * IBUS on Main Port USART
  */
 #include <uvos_ibus_priv.h>
 
@@ -458,9 +482,9 @@ static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
     },
   },
   .rx                                        = {
-    .gpio = GPIOB,
+    .gpio = GPIOA,
     .init = {
-      .Pin   = LL_GPIO_PIN_7,
+      .Pin   = LL_GPIO_PIN_10,
       .Mode = LL_GPIO_MODE_ALTERNATE,
       .Speed = LL_GPIO_SPEED_FREQ_LOW,
       .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -469,13 +493,13 @@ static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
     },
   },
   .tx                                        = {
-    .gpio = GPIOB,
+    .gpio = GPIOA,
     .init = {
-      .Pin   = LL_GPIO_PIN_6,
-      .Mode = LL_GPIO_MODE_OUTPUT,
+      .Pin   = LL_GPIO_PIN_9,
+      .Mode = LL_GPIO_MODE_ALTERNATE,
       .Speed = LL_GPIO_SPEED_FREQ_LOW,
       .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
-      .Pull = LL_GPIO_PULL_NO,
+      .Pull = LL_GPIO_PULL_UP,
       .Alternate = LL_GPIO_AF_7,
     },
   },
@@ -521,7 +545,7 @@ static const LL_TIM_InitTypeDef tim_1_8_9_10_time_base = {
   .ClockDivision     = LL_TIM_CLOCKDIVISION_DIV1,
   .RepetitionCounter = 0x0000,
 };
-static const LL_TIM_InitTypeDef tim_2_3_4_5_time_base = {
+static const LL_TIM_InitTypeDef tim_2_3_4_5_12_time_base = {
   .Prescaler         = ( UVOS_PERIPHERAL_APB1_CLOCK / 1000000 ) - 1,
   .CounterMode       = LL_TIM_COUNTERMODE_UP,
   .Autoreload        = ( ( 1000000 / UVOS_SERVO_UPDATE_HZ ) - 1 ),
@@ -551,10 +575,10 @@ static const struct uvos_tim_clock_cfg tim_1_cfg = {
 
 static const struct uvos_tim_clock_cfg tim_2_cfg = {
   .timer = TIM2,
-  .time_base_init                            = &tim_2_3_4_5_time_base,
+  .time_base_init                            = &tim_2_3_4_5_12_time_base,
   .irq   = {
     .init                                  = {
-      .NVIC_IRQChannel    = TIM1_UP_TIM10_IRQn,
+      .NVIC_IRQChannel    = TIM2_IRQn,
       .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
       .NVIC_IRQChannelSubPriority        = 0,
       .NVIC_IRQChannelCmd = ENABLE,
@@ -564,7 +588,7 @@ static const struct uvos_tim_clock_cfg tim_2_cfg = {
 
 static const struct uvos_tim_clock_cfg tim_3_cfg = {
   .timer = TIM3,
-  .time_base_init                            = &tim_2_3_4_5_time_base,
+  .time_base_init                            = &tim_2_3_4_5_12_time_base,
   .irq   = {
     .init                                  = {
       .NVIC_IRQChannel    = TIM3_IRQn,
@@ -577,7 +601,7 @@ static const struct uvos_tim_clock_cfg tim_3_cfg = {
 
 static const struct uvos_tim_clock_cfg tim_5_cfg = {
   .timer = TIM5,
-  .time_base_init                            = &tim_2_3_4_5_time_base,
+  .time_base_init                            = &tim_2_3_4_5_12_time_base,
   .irq   = {
     .init                                  = {
       .NVIC_IRQChannel    = TIM5_IRQn,
@@ -627,64 +651,32 @@ static const struct uvos_tim_clock_cfg tim_11_cfg = {
   },
 };
 
+static const struct uvos_tim_clock_cfg tim_12_cfg = {
+  .timer = TIM12,
+  .time_base_init                            = &tim_2_3_4_5_12_time_base,
+  .irq   = {
+    .init                                  = {
+      .NVIC_IRQChannel    = TIM8_BRK_TIM12_IRQn,
+      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
+      .NVIC_IRQChannelSubPriority        = 0,
+      .NVIC_IRQChannelCmd = ENABLE,
+    },
+  },
+};
+
 /**
  * Pios servo configuration structures
- * Using TIM1, TIM3
- *      o1  |   PA8    |  TIM1_CH1   |   AF01   |
- *      o2  |   PA9    |  TIM1_CH2   |   AF01   |  USART1_TX
- *      o3  |   PA10   |  TIM1_CH3   |   AF01   |  USART1_RX
- *      o4  |   PB0    |  TIM3_CH3   |   AF02   |  ADC1_8
- *      o5  |   PB4    |  TIM3_CH1   |   AF02   |  SPI1_MISO
- *      o6  |   PB5    |  TIM3_CH2   |   AF02   |  SPI1_MOSI
+ * Using TIM2, TIM3, TIM5, TIM9
+ *      o1  |   PB0    |  TIM3_CH3   |   AF02   |
+ *      o2  |   PB1    |  TIM3_CH4   |   AF02   |
+ *      o3  |   PA3    |  TIM9_CH2   |   AF03   |  USART2_RX
+ *      o4  |   PA2    |  TIM2_CH3   |   AF01   |  USART2_TX
+ *      o5  |   PA1    |  TIM5_CH2   |   AF02   |  USART4_RX
+ *      o6  |   PA0    |  TIM5_CH1   |   AF02   |  USART4_TX
  */
 #include <uvos_servo_priv.h>
 #include <uvos_servo_config.h>
 static const struct uvos_tim_channel uvos_tim_servoport_all_pins[] = {
-  {
-    .timer = TIM1,
-    .timer_chan = LL_TIM_CHANNEL_CH1,
-    .pin   = {
-      .gpio = GPIOA,
-      .init = {
-        .Pin   = LL_GPIO_PIN_8,
-        .Mode = LL_GPIO_MODE_ALTERNATE,
-        .Speed = LL_GPIO_SPEED_FREQ_LOW,
-        .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
-        .Pull = LL_GPIO_PULL_UP,
-        .Alternate = LL_GPIO_AF_1,
-      },
-    },
-  },
-  {
-    .timer = TIM1,
-    .timer_chan = LL_TIM_CHANNEL_CH2,
-    .pin   = {
-      .gpio = GPIOA,
-      .init = {
-        .Pin   = LL_GPIO_PIN_9,
-        .Mode = LL_GPIO_MODE_ALTERNATE,
-        .Speed = LL_GPIO_SPEED_FREQ_LOW,
-        .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
-        .Pull = LL_GPIO_PULL_UP,
-        .Alternate = LL_GPIO_AF_1,
-      },
-    },
-  },
-  {
-    .timer = TIM1,
-    .timer_chan = LL_TIM_CHANNEL_CH3,
-    .pin   = {
-      .gpio = GPIOA,
-      .init = {
-        .Pin   = LL_GPIO_PIN_10,
-        .Mode = LL_GPIO_MODE_ALTERNATE,
-        .Speed = LL_GPIO_SPEED_FREQ_LOW,
-        .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
-        .Pull = LL_GPIO_PULL_UP,
-        .Alternate = LL_GPIO_AF_1,
-      },
-    },
-  },
   {
     .timer = TIM3,
     .timer_chan = LL_TIM_CHANNEL_CH3,
@@ -702,11 +694,11 @@ static const struct uvos_tim_channel uvos_tim_servoport_all_pins[] = {
   },
   {
     .timer = TIM3,
-    .timer_chan = LL_TIM_CHANNEL_CH1,
+    .timer_chan = LL_TIM_CHANNEL_CH4,
     .pin   = {
       .gpio = GPIOB,
       .init = {
-        .Pin   = LL_GPIO_PIN_4,
+        .Pin   = LL_GPIO_PIN_1,
         .Mode = LL_GPIO_MODE_ALTERNATE,
         .Speed = LL_GPIO_SPEED_FREQ_LOW,
         .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -716,12 +708,57 @@ static const struct uvos_tim_channel uvos_tim_servoport_all_pins[] = {
     },
   },
   {
-    .timer = TIM3,
+    .timer = TIM9,
     .timer_chan = LL_TIM_CHANNEL_CH2,
     .pin   = {
-      .gpio = GPIOB,
+      .gpio = GPIOA,
       .init = {
-        .Pin   = LL_GPIO_PIN_5,
+        .Pin   = LL_GPIO_PIN_3,
+        .Mode = LL_GPIO_MODE_ALTERNATE,
+        .Speed = LL_GPIO_SPEED_FREQ_LOW,
+        .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
+        .Pull = LL_GPIO_PULL_UP,
+        .Alternate = LL_GPIO_AF_3,
+      },
+    },
+  },
+  {
+    .timer = TIM2,
+    .timer_chan = LL_TIM_CHANNEL_CH3,
+    .pin   = {
+      .gpio = GPIOA,
+      .init = {
+        .Pin   = LL_GPIO_PIN_2,
+        .Mode = LL_GPIO_MODE_ALTERNATE,
+        .Speed = LL_GPIO_SPEED_FREQ_LOW,
+        .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
+        .Pull = LL_GPIO_PULL_UP,
+        .Alternate = LL_GPIO_AF_1,
+      },
+    },
+  },
+  {
+    .timer = TIM5,
+    .timer_chan = LL_TIM_CHANNEL_CH2,
+    .pin   = {
+      .gpio = GPIOA,
+      .init = {
+        .Pin   = LL_GPIO_PIN_1,
+        .Mode = LL_GPIO_MODE_ALTERNATE,
+        .Speed = LL_GPIO_SPEED_FREQ_LOW,
+        .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
+        .Pull = LL_GPIO_PULL_UP,
+        .Alternate = LL_GPIO_AF_2,
+      },
+    },
+  },
+  {
+    .timer = TIM5,
+    .timer_chan = LL_TIM_CHANNEL_CH1,
+    .pin   = {
+      .gpio = GPIOA,
+      .init = {
+        .Pin   = LL_GPIO_PIN_0,
         .Mode = LL_GPIO_MODE_ALTERNATE,
         .Speed = LL_GPIO_SPEED_FREQ_LOW,
         .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -736,14 +773,6 @@ static const struct uvos_tim_channel uvos_tim_servoport_all_pins[] = {
 
 const struct uvos_servo_cfg uvos_servo_cfg_out = {
   .tim_oc_init          = {
-    // .TIM_OCMode       = TIM_OCMode_PWM1,
-    // .TIM_OutputState  = TIM_OutputState_Enable,
-    // .TIM_OutputNState = TIM_OutputNState_Disable,
-    // .TIM_Pulse        = PIOS_SERVOS_INITIAL_POSITION,
-    // .TIM_OCPolarity   = TIM_OCPolarity_High,
-    // .TIM_OCNPolarity  = TIM_OCPolarity_High,
-    // .TIM_OCIdleState  = TIM_OCIdleState_Reset,
-    // .TIM_OCNIdleState = TIM_OCNIdleState_Reset,
     .OCMode = LL_TIM_OCMODE_PWM1,
     .OCState = LL_TIM_OCSTATE_ENABLE,
     .OCNState = LL_TIM_OCSTATE_DISABLE,
