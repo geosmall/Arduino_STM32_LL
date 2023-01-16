@@ -11,7 +11,7 @@ version=0.0.3
 # ----------------------
 # compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/stm32/usb" "-I{build.core.path}/stm32/usb/hid" "-I{build.core.path}/stm32/usb/cdc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/{build.series}" "-I{build.system.path}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc" "-I{build.system.path}/Middlewares/ST/STM32_USB_Device_Library/Core/Src"
 
-compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/uvos" "-I{build.core.path}/uvos/uvos_inc" "-I{build.core.path}/uvos/libraries/inc" "-I{build.system.path}/{build.series}" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/uvos_hal/{build.series}"
+compiler.stm.extra_include="-I{build.source.path}" "-I{build.core.path}/stm32" "-I{build.core.path}/stm32/LL" "-I{build.core.path}/uvos" "-I{build.core.path}/uvos/uvos_inc" "-I{build.core.path}/uvos/libraries/inc" "-I{build.core.path}/UAVWare" "-I{build.system.path}/{build.series}" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Inc" "-I{build.system.path}/Drivers/{build.series}_HAL_Driver/Src" "-I{build.system.path}/uvos_hal/{build.series}"
 
 compiler.warning_flags=-w
 compiler.warning_flags.none=-w
