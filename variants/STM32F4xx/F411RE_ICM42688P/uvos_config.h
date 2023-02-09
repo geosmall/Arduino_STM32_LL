@@ -1,10 +1,12 @@
 #ifndef UVOS_CONFIG_H
 #define UVOS_CONFIG_H
 
-/* FC Revo F405RG series */
-#define REVO_F405RG
+/* ST Nucleo F411RE series with ICM42688P */
+#define NUCLEO_F411RE_ICM42688P
 
 #define UVOS_MAIN_LOOP_RATE 1000
+
+// #define SKIP_MPU_EXISTS_CHECK
 
 /*
  * Below is a complete list of UVOS configurable options.
@@ -56,8 +58,8 @@
 /* UVOS common peripherals */
 #define UVOS_INCLUDE_LED
 #define UVOS_INCLUDE_SERVO
-#define UVOS_INCLUDE_FLASH
-// #define UVOS_INCLUDE_SDCARD
+// #define UVOS_INCLUDE_FLASH
+#define UVOS_INCLUDE_SDCARD
 #define UVOS_FLASHFS_LOGFS_MAX_DEVS 5
 #define UVOS_INCLUDE_FLASH_LOGFS_SETTINGS
 

@@ -7,7 +7,8 @@ int UAVWare_init( void )
   UVOS_SYS_Init();
 
   /* board driver init */
-  if ( UVOS_Board_Init() ) {
+  int32_t ret = UVOS_Board_Init();
+  if ( ret ) {
 #ifdef UVOS_INCLUDE_DEBUG_CONSOLE
     UVOS_DEBUG_Panic( "System initialization Error\r\n" );
 #endif // UVOS_INCLUDE_DEBUG_CONSOLE

@@ -4,14 +4,16 @@
 /* ST Nucleo F411RE series */
 #define NUCLEO_F411RE
 
+#define UVOS_MAIN_LOOP_RATE 1000
+
+// #define SKIP_MPU_EXISTS_CHECK
+
 /*
  * Below is a complete list of UVOS configurable options.
  * Please do not remove or rearrange them. Only comment out
  * unused options in the list. See main uvos.h header for more
  * details.
  */
-
-#define SKIP_MPU_EXISTS_CHECK
 
 #define UVOS_INCLUDE_DEBUG_CONSOLE
 /* #define DEBUG_LEVEL 0 */

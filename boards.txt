@@ -59,8 +59,8 @@ Nucleo_64.build.board=Nucleo_64
 Nucleo_64.build.variant_h=variant_{build.board}.h
 Nucleo_64.build.extra_flags=-D{build.product_line} {build.enable_usb} {build.xSerial}
 
-# NUCLEO_F411RE board
-Nucleo_64.menu.pnum.NUCLEO_F411RE=Nucleo F411RE
+# NUCLEO_F411RE board with MPU6000
+Nucleo_64.menu.pnum.NUCLEO_F411RE=Nucleo F411RE /w MPU6000
 Nucleo_64.menu.pnum.NUCLEO_F411RE.node="NODE_F411RE,NUCLEO"
 Nucleo_64.menu.pnum.NUCLEO_F411RE.upload.maximum_size=524288
 Nucleo_64.menu.pnum.NUCLEO_F411RE.upload.maximum_data_size=131072
@@ -72,8 +72,21 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE.build.product_line=STM32F411xE
 Nucleo_64.menu.pnum.NUCLEO_F411RE.build.variant=STM32F4xx/F411R(C-E)T
 Nucleo_64.menu.pnum.NUCLEO_F411RE.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
-# NUCLEO_F405RG board
-Nucleo_64.menu.pnum.NUCLEO_F405RG=Nucleo F405RG
+# NUCLEO_F411RE board with ICM42688P
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P=Nucleo F411RE w/ ICM42688P
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.node="NODE_F411RE_ICM42688P,NUCLEO"
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.upload.maximum_size=524288
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.upload.maximum_data_size=131072
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.mcu=cortex-m4
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.flags.fp=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.board=NUCLEO_F411RE_ICM42688P
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.series=STM32F4xx
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.product_line=STM32F411xE
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.variant=STM32F4xx/F411RE_ICM42688P
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.cmsis_lib_gcc=arm_cortexM4lf_math
+
+# NUCLEO_F405RG board with MPU6000
+Nucleo_64.menu.pnum.NUCLEO_F405RG=Nucleo F405RG W/ MPU6000
 Nucleo_64.menu.pnum.NUCLEO_F405RG.node="NODE_F405RG,NUCLEO"
 Nucleo_64.menu.pnum.NUCLEO_F405RG.upload.maximum_size=1048576
 Nucleo_64.menu.pnum.NUCLEO_F405RG.upload.maximum_data_size=131072
@@ -105,7 +118,7 @@ Nucleo_64.menu.upload_method.bmpMethod=BMP (Black Magic Probe)
 Nucleo_64.menu.upload_method.bmpMethod.upload.protocol=gdb_bmp
 Nucleo_64.menu.upload_method.bmpMethod.upload.tool=bmp_upload
 
-Nucleo_64.menu.upload_method.jlinkMethod=JLink Programmer
+Nucleo_64.menu.upload_method.jlinkMethod=JLink Ozone Debug
 Nucleo_64.menu.upload_method.jlinkMethod.upload.device=STM32F405RG
 Nucleo_64.menu.upload_method.jlinkMethod.upload.protocol=SWD
 Nucleo_64.menu.upload_method.jlinkMethod.upload.options=-g

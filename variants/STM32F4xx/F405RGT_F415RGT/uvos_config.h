@@ -1,8 +1,10 @@
 #ifndef UVOS_CONFIG_H
 #define UVOS_CONFIG_H
 
-/* ST Nucleo F411RE series */
-#define NUCLEO_F411RE
+/* ST Nucleo F405RG series */
+#define NUCLEO_F405RG
+
+#define UVOS_MAIN_LOOP_RATE 1000
 
 /*
  * Below is a complete list of UVOS configurable options.

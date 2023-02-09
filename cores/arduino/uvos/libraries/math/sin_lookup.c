@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "uvos_math.h"
 
 #define FLASH_TABLE
 #ifdef FLASH_TABLE

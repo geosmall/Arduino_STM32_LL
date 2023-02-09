@@ -146,6 +146,11 @@ extern uintptr_t uvos_spi_flash_id;
 #define UVOS_FLASH_SPI_PORT (uvos_spi_flash_id)
 #endif /* UVOS_INCLUDE_FLASH */
 
+#if defined(UVOS_INCLUDE_SDCARD)
+extern uintptr_t uvos_spi_flash_id;
+#define UVOS_SDCARD_SPI_PORT (uvos_spi_sdcard_id)
+#endif /* UVOS_INCLUDE_FLASH */
+
 // -------------------------
 // Packet Handler
 // -------------------------
@@ -173,7 +178,7 @@ extern uint32_t uvos_packet_handler;
 // #define UVOS_PERIPHERAL_CLOCK
 // #define UVOS_PERIPHERAL_CLOCK
 
-#define UVOS_SYSCLK 168000000
+#define UVOS_SYSCLK 96000000
 // Peripherals that belongs to APB1 are:
 // DAC      |PWR        |CAN1,2
 // I2C1,2,3   |UART4,5      |USART3,2
@@ -184,7 +189,7 @@ extern uint32_t uvos_packet_handler;
 
 // Calculated as SYSCLK / APBPresc * (APBPre == 1 ? 1 : 2)
 // Default APB1 Prescaler = 2
-#define UVOS_PERIPHERAL_APB1_CLOCK   UVOS_SYSCLK / 2
+#define UVOS_PERIPHERAL_APB1_CLOCK   UVOS_SYSCLK
 
 // Peripherals belonging to APB2
 // SDIO     |EXTI       |SYSCFG     |SPI1
@@ -284,7 +289,7 @@ extern uint32_t uvos_packet_handler;
 // -------------------------
 #define UVOS_SERVO_UPDATE_HZ         50
 #define UVOS_SERVOS_INITIAL_POSITION 0 /* dont want to start motors, have no pulse till settings loaded */
-#define UVOS_SERVO_BANKS             4
+#define UVOS_SERVO_BANKS             2
 
 // --------------------------
 // Timer controller settings

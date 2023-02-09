@@ -61,27 +61,14 @@ static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
 
 #endif // defined( UVOS_INCLUDE_EXTI )
 
-static const struct uvos_mpu_cfg uvos_mpu_cfg = {
+static const uvos_mpu_cfg_t uvos_mpu_cfg = {
+  .expected_device_id = Invensense_MPU6000,
   // .exti_cfg   = &uvos_exti_mpu_cfg,
-  // .Fifo_store = UVOS_MPU_FIFO_TEMP_OUT | UVOS_MPU_FIFO_GYRO_X_OUT | UVOS_MPU_FIFO_GYRO_Y_OUT | UVOS_MPU_FIFO_GYRO_Z_OUT,
-  .device_id = Invensense_MPU6000,
-  // Clock at 8 khz
-  .Smpl_rate_div_no_dlp = 0,
-  // with dlp on output rate is 1000Hz
-  .Smpl_rate_div_dlp    = 0,
-  // .interrupt_cfg  = UVOS_MPU_INT_CLR_ANYRD,
-  // .interrupt_en   = UVOS_MPU_INTEN_DATA_RDY,
-  .User_ctl       = BIT_USER_CTRL_I2C_IF_DIS,
-  .Pwr_mgmt_clk   = BIT_PWR_MGMT_1_CLK_ZGYRO,
-  // .accel_range    = UVOS_ACCEL_FS_2G_BITS,
-  .accel_range    = UVOS_ACCEL_FS_4G_BITS,
-  // .gyro_range     = UVOS_GYRO_FS_250DPS_BITS,
-  .gyro_range     = UVOS_GYRO_FS_2000DPS_BITS,
-  .filter         = UVOS_LOWPASS_256_HZ_BITS,
-  // .orientation    = UVOS_MPU_TOP_180DEG,
-  .fast_prescaler = UVOS_SPI_PRESCALER_16,  // 96MHz / 16 = 6MHz
-  .std_prescaler  = UVOS_SPI_PRESCALER_128, // 96MHz / 128 = 0.75MHz
-  .max_downsample = 20,
+  .default_samplerate_hz = UVOS_MAIN_LOOP_RATE,
+  .default_gyro_range    = UVOS_GYRO_RANGE_2000DPS,
+  .default_accel_range   = UVOS_ACCEL_RANGE_4G,
+  .fast_prescaler        = UVOS_SPI_PRESCALER_16,  // 96MHz / 16 = 6MHz
+  .std_prescaler         = UVOS_SPI_PRESCALER_128, // 96MHz / 128 = 0.75MHz
 };
 
 #endif /* UVOS_INCLUDE_MPU */
@@ -191,7 +178,7 @@ static void UVOS_Board_configure_ibus( const struct uvos_usart_cfg *usart_cfg )
  * initializes all the core subsystems on this specific hardware
  * called from uavware.c
  */
-WEAK uint32_t UVOS_Board_Init( void )
+WEAK int32_t UVOS_Board_Init( void )
 {
 
 #if defined( UVOS_INCLUDE_LED )
@@ -223,11 +210,6 @@ WEAK uint32_t UVOS_Board_Init( void )
 #if defined( ERASE_SYSTEM_FLASH )
   UVOS_Flash_Jedec_EraseChip( uvos_spi_flash_id );
 #endif // defined( ERASE_SYSTEM_FLASH )
-
-  // if ( UW_fs_init( flash_id ) ) {
-  // if ( UW_fs_init( uvos_spi_flash_id ) ) {
-  //   return -3;
-  // }
 
 #endif // defined( UVOS_INCLUDE_FLASH )
 

@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-uint32_t UVOS_Board_Init( void );
+int32_t UVOS_Board_Init( void );
 void SystemClock_Config( void );
 
 // ------------------------
@@ -207,7 +207,7 @@ extern uint32_t uvos_packet_handler;
 // -------------------------
 // Scheduler defines
 // -------------------------
-#define UVOS_SCHED_UPDATE_HZ         1000
+#define UVOS_SCHED_UPDATE_HZ         UVOS_MAIN_LOOP_RATE
 
 // The maximum number of tasks required at any one time
 #define SCH_MAX_TASKS ( 5 )

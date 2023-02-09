@@ -57,8 +57,12 @@ static int block_device_read( const struct lfs_config * c, lfs_block_t block,  l
 {
   uint32_t result;
 
-  // result = UVOS_Flash_Jedec_ReadData( _flash_id, block * c->block_size + off, buffer, size );
+#if defined ( UVOS_INCLUDE_SDCARD )
+
+#elif defined ( UVOS_INCLUDE_FLASH )
   result = UVOS_Flash_Jedec_ReadData( UVOS_FLASH_SPI_PORT, block * c->block_size + off, buffer, size );
+#endif // defined ( UVOS_INCLUDE_SDCARD )
+
   if ( result ) {
     return LFS_ERR_IO;
   }
@@ -69,8 +73,12 @@ static int block_device_prog( const struct lfs_config * c, lfs_block_t block, lf
 {
   uint32_t result;
 
-  // result = UVOS_Flash_Jedec_WriteData( _flash_id, block * c->block_size + off, ( uint8_t * )buffer, size );
+#if defined ( UVOS_INCLUDE_SDCARD )
+
+#elif defined ( UVOS_INCLUDE_FLASH )
   result = UVOS_Flash_Jedec_WriteData( UVOS_FLASH_SPI_PORT, block * c->block_size + off, ( uint8_t * )buffer, size );
+#endif // defined ( UVOS_INCLUDE_SDCARD )
+
   if ( result ) {
     return LFS_ERR_IO;
   }
@@ -81,8 +89,12 @@ static int block_device_erase( const struct lfs_config * c, lfs_block_t block )
 {
   uint32_t result;
 
-  // result = UVOS_Flash_Jedec_EraseSector( _flash_id, block * c->block_size );
+#if defined ( UVOS_INCLUDE_SDCARD )
+
+#elif defined ( UVOS_INCLUDE_FLASH )
   result = UVOS_Flash_Jedec_EraseSector( UVOS_FLASH_SPI_PORT, block * c->block_size );
+#endif // defined ( UVOS_INCLUDE_SDCARD )
+
   if ( result ) {
     return LFS_ERR_IO;
   }
