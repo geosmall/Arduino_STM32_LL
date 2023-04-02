@@ -220,7 +220,8 @@ WEAK int32_t UVOS_Board_Init( void )
   }
   /* Enable and mount the SDCard */
   UVOS_SDCARD_Init( uvos_spi_telem_sdcard_id );
-  if ( UVOS_SDCARD_MountFS( 0 ) ) {
+
+  if ( UVOS_SDCARD_MountFS( 1 ) ) {
     return -2;
   }
 #endif // defined( UVOS_INCLUDE_SDCARD )

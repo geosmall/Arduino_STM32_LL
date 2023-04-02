@@ -111,7 +111,7 @@ int32_t UVOS_MPU_Init( uint32_t spi_id, uint32_t slave_num, const struct uvos_mp
 	} else if ( _mpu_dev->family == 2 ) {
 		return_val = -1; // IMU family not implemented yet
 	} else if ( _mpu_dev->family == 3 ) {
-		return_val = -1; // IMU family not implemented yet
+		return_val = UVOS_MPUV3_Hardware_Init( _mpu_dev );
 	}
 
 	if ( return_val != 0 ) {

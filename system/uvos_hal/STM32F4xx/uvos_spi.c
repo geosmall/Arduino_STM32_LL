@@ -6,14 +6,14 @@
 
 #define SPI_MAX_BLOCK_PIO 128
 
-static bool UVOS_SPI_validate( __attribute__( ( unused ) ) struct uvos_spi_dev * com_dev )
+static bool UVOS_SPI_validate( __attribute__( ( unused ) ) struct uvos_spi_dev *com_dev )
 {
   /* Should check device magic here */
   return true;
 }
 
 #if defined(UVOS_INCLUDE_FREERTOS)
-static struct uvos_spi_dev * UVOS_SPI_alloc( void )
+static struct uvos_spi_dev *UVOS_SPI_alloc( void )
 {
   return UVOS_malloc( sizeof( struct uvos_spi_dev ) );
 }
@@ -22,7 +22,7 @@ static struct uvos_spi_dev uvos_spi_devs[ UVOS_SPI_MAX_DEVS ];
 static uint8_t uvos_spi_num_devs;
 
 /* Module level allocate function, allocates instance from static uvos_spi_devs[] pool */
-static struct uvos_spi_dev * UVOS_SPI_alloc( void )
+static struct uvos_spi_dev *UVOS_SPI_alloc( void )
 {
   if ( uvos_spi_num_devs >= UVOS_SPI_MAX_DEVS ) {
     return NULL;
@@ -43,7 +43,7 @@ static struct uvos_spi_dev * UVOS_SPI_alloc( void )
   *            @arg SPI_NSSInternalSoft_Reset: Reset NSS pin internally
   * @retval None
   */
-void SPI_NSSInternalSoftwareConfig( SPI_TypeDef * SPIx, uint16_t SPI_NSSInternalSoft )
+void SPI_NSSInternalSoftwareConfig( SPI_TypeDef *SPIx, uint16_t SPI_NSSInternalSoft )
 {
   /* Check the parameters */
   // assert_param(IS_SPI_ALL_PERIPH(SPIx));
@@ -64,7 +64,7 @@ void SPI_NSSInternalSoftwareConfig( SPI_TypeDef * SPIx, uint16_t SPI_NSSInternal
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
-void SPI_SSOutputCmd( SPI_TypeDef * SPIx, FunctionalState NewState )
+void SPI_SSOutputCmd( SPI_TypeDef *SPIx, FunctionalState NewState )
 {
   /* Check the parameters */
   // assert_param(IS_SPI_ALL_PERIPH(SPIx));
@@ -85,14 +85,14 @@ void SPI_SSOutputCmd( SPI_TypeDef * SPIx, FunctionalState NewState )
  * \param[in] mode currently only mode 0 supported
  * \return < 0 if initialisation failed
  */
-int32_t UVOS_SPI_Init( uint32_t * spi_id, const struct uvos_spi_cfg * cfg )
+int32_t UVOS_SPI_Init( uint32_t *spi_id, const struct uvos_spi_cfg *cfg )
 {
   uint32_t init_ssel = 0;
 
   UVOS_Assert( spi_id );
   UVOS_Assert( cfg );
 
-  struct uvos_spi_dev * spi_dev;
+  struct uvos_spi_dev *spi_dev;
 
   spi_dev = ( struct uvos_spi_dev * )UVOS_SPI_alloc();
   if ( !spi_dev ) {
@@ -131,7 +131,7 @@ int32_t UVOS_SPI_Init( uint32_t * spi_id, const struct uvos_spi_cfg * cfg )
     /* only legal for single-slave config */
     UVOS_Assert( spi_dev->cfg->slave_count == 1 );
     init_ssel = 1;
-    SPI_SSOutputCmd( spi_dev->cfg->regs, ( spi_dev->cfg->init.Mode == LL_SPI_NSS_HARD_OUTPUT ) ? ENABLE : DISABLE );
+    SPI_SSOutputCmd( spi_dev->cfg->regs, ( spi_dev->cfg->init.Mode == LL_SPI_MODE_MASTER ) ? ENABLE : DISABLE );
     break;
 
   default:
@@ -155,8 +155,8 @@ int32_t UVOS_SPI_Init( uint32_t * spi_id, const struct uvos_spi_cfg * cfg )
   }
 
   /* Save DMA Rx/Tx instances */
-  DMA_TypeDef * DMAx_rx = spi_dev->cfg->dma.rx.DMAx;
-  DMA_TypeDef * DMAx_tx = spi_dev->cfg->dma.tx.DMAx;
+  DMA_TypeDef *DMAx_rx = spi_dev->cfg->dma.rx.DMAx;
+  DMA_TypeDef *DMAx_tx = spi_dev->cfg->dma.tx.DMAx;
 
   /* Configure DMA for SPI Rx */
   LL_DMA_DeInit( DMAx_rx, spi_dev->cfg->dma.rx.stream );
@@ -191,21 +191,14 @@ int32_t UVOS_SPI_Init( uint32_t * spi_id, const struct uvos_spi_cfg * cfg )
 
   /* Configure DMA interrupt */
   NVIC_Init( ( NVIC_InitTypeDef * ) & ( spi_dev->cfg->dma.irq.init ) );
-  // NVIC_SetPriority( spi_dev->cfg->dma.irq.init.NVIC_IRQChannel,
-  //                   NVIC_EncodePriority( NVIC_GetPriorityGrouping(),
-  //                                        spi_dev->cfg->dma.irq.init.NVIC_IRQChannelPreemptionPriority,
-  //                                        spi_dev->cfg->dma.irq.init.NVIC_IRQChannelSubPriority ) );
-  // if ( spi_dev->cfg->dma.irq.init.NVIC_IRQChannelCmd != DISABLE ) {
-  //   NVIC_EnableIRQ( spi_dev->cfg->dma.irq.init.NVIC_IRQChannel );
-  // } else {
-  //   NVIC_DisableIRQ( spi_dev->cfg->dma.irq.init.NVIC_IRQChannel );
-  // }
 
   return 0;
 
 out_fail:
   return -1;
 }
+
+#if 0 // GLS
 
 /**
  * (Re-)initialises SPI peripheral clock rate
@@ -228,7 +221,7 @@ out_fail:
  */
 int32_t UVOS_SPI_SetClockSpeed( uint32_t spi_id, SPIPrescalerTypeDef spi_prescaler )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
 
@@ -249,6 +242,47 @@ int32_t UVOS_SPI_SetClockSpeed( uint32_t spi_id, SPIPrescalerTypeDef spi_prescal
   return 0;
 }
 
+#else // GLS
+
+/**
+ * (Re-)initialise SPI peripheral clock rate
+ *
+ * \param[in] spi SPI number (0 or 1)
+ * \param[in] spi_prescaler configures the SPI speed
+ * \return 0 if no error
+ * \return -1 if disabled SPI port selected
+ * \return -3 if invalid spi_prescaler selected
+ */
+int32_t UVOS_SPI_SetClockSpeed( uint32_t spi_id, SPIPrescalerTypeDef spi_prescaler )
+{
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
+
+  bool valid = UVOS_SPI_validate( spi_dev );
+
+  UVOS_Assert( valid )
+
+  LL_SPI_InitTypeDef SPI_InitStructure;
+
+  /* Validate selected prescaler */
+  if ( !( IS_SPI_PRESCALER( spi_prescaler ) ) ) {
+    return -3;
+  }
+
+  /* Start with a copy of the default configuration for the peripheral */
+  SPI_InitStructure = spi_dev->cfg->init;
+
+  /* Adjust the prescaler */
+  SPI_InitStructure.BaudRate = spi_prescaler;
+
+  /* Write back the new configuration */
+  LL_SPI_Init( spi_dev->cfg->regs, &SPI_InitStructure );
+
+  UVOS_SPI_TransferByte( spi_id, 0xFF );
+  return 0;
+}
+
+#endif // GLS
+
 /**
  * Claim the SPI bus semaphore.  Calling the SPI functions does not require this
  * \param[in] spi SPI number (0 or 1)
@@ -258,7 +292,7 @@ int32_t UVOS_SPI_SetClockSpeed( uint32_t spi_id, SPIPrescalerTypeDef spi_prescal
 int32_t UVOS_SPI_ClaimBus( uint32_t spi_id )
 {
 #if defined(UVOS_INCLUDE_FREERTOS)
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
   UVOS_Assert( valid )
@@ -267,7 +301,7 @@ int32_t UVOS_SPI_ClaimBus( uint32_t spi_id )
     return -1;
   }
 #else
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
   uint32_t timeout = 0xffff;
   while ( ( UVOS_SPI_Busy( spi_id ) || spi_dev->busy ) && --timeout ) {
     ;
@@ -294,10 +328,10 @@ int32_t UVOS_SPI_ClaimBus( uint32_t spi_id )
  * \return 0 if no error
  * \return -1 if timeout before claiming semaphore
  */
-int32_t UVOS_SPI_ClaimBusISR( uint32_t spi_id, bool * woken )
+int32_t UVOS_SPI_ClaimBusISR( uint32_t spi_id, bool *woken )
 {
 #if defined(UVOS_INCLUDE_FREERTOS)
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
   signed portBASE_TYPE higherPriorityTaskWoken = pdFALSE;
 
   bool valid = UVOS_SPI_validate( spi_dev );
@@ -328,14 +362,14 @@ int32_t UVOS_SPI_ClaimBusISR( uint32_t spi_id, bool * woken )
 int32_t UVOS_SPI_ReleaseBus( uint32_t spi_id )
 {
 #if defined(UVOS_INCLUDE_FREERTOS)
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
   UVOS_Assert( valid )
 
   xSemaphoreGive( spi_dev->busy );
 #else
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
   UVOS_IRQ_Disable();
   spi_dev->busy = 0;
   UVOS_IRQ_Enable();
@@ -350,10 +384,10 @@ int32_t UVOS_SPI_ReleaseBus( uint32_t spi_id )
  *                      task has is now eligible to run, else unchanged
  * \return 0 if no error
  */
-int32_t UVOS_SPI_ReleaseBusISR( uint32_t spi_id, bool * woken )
+int32_t UVOS_SPI_ReleaseBusISR( uint32_t spi_id, bool *woken )
 {
 #if defined(UVOS_INCLUDE_FREERTOS)
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
   signed portBASE_TYPE higherPriorityTaskWoken = pdFALSE;
 
   bool valid = UVOS_SPI_validate( spi_dev );
@@ -382,7 +416,7 @@ int32_t UVOS_SPI_ReleaseBusISR( uint32_t spi_id, bool * woken )
  */
 int32_t UVOS_SPI_RC_PinSet( uint32_t spi_id, uint32_t slave_id, uint8_t pin_value )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
 
@@ -406,7 +440,7 @@ int32_t UVOS_SPI_RC_PinSet( uint32_t spi_id, uint32_t slave_id, uint8_t pin_valu
  */
 int32_t UVOS_SPI_TransferByte( uint32_t spi_id, uint8_t b )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
 
@@ -442,6 +476,8 @@ int32_t UVOS_SPI_TransferByte( uint32_t spi_id, uint8_t b )
   return rx_byte;
 }
 
+#if 0 // GLS
+
 /**
  * Transfers a block of bytes via DMA.
  * \param[in] spi SPI number (0 or 1)
@@ -458,9 +494,9 @@ int32_t UVOS_SPI_TransferByte( uint32_t spi_id, uint8_t b )
  * \return -1 if disabled SPI port selected
  * \return -3 if function has been called during an ongoing DMA transfer
  */
-static int32_t UVOS_SPI_TransferBlock_DMA( uint32_t spi_id, const uint8_t * send_buffer, uint8_t * receive_buffer, uint16_t len, void * callback )
+static int32_t UVOS_SPI_TransferBlock_DMA( uint32_t spi_id, const uint8_t *send_buffer, uint8_t *receive_buffer, uint16_t len, void *callback )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
 
@@ -608,6 +644,178 @@ static int32_t UVOS_SPI_TransferBlock_DMA( uint32_t spi_id, const uint8_t * send
 
 }
 
+#else // GLS
+
+/**
+ * Transfers a block of bytes via DMA.
+ * \param[in] spi SPI number (0 or 1)
+ * \param[in] send_buffer pointer to buffer which should be sent.<BR>
+ * If NULL, 0xff (all-one) will be sent.
+ * \param[in] receive_buffer pointer to buffer which should get the received values.<BR>
+ * If NULL, received bytes will be discarded.
+ * \param[in] len number of bytes which should be transfered
+ * \param[in] callback pointer to callback function which will be executed
+ * from DMA channel interrupt once the transfer is finished.
+ * If NULL, no callback function will be used, and UVOS_SPI_TransferBlock() will
+ * block until the transfer is finished.
+ * \return >= 0 if no error during transfer
+ * \return -1 if disabled SPI port selected
+ * \return -3 if function has been called during an ongoing DMA transfer
+ */
+static int32_t UVOS_SPI_TransferBlock_DMA( uint32_t spi_id, const uint8_t *send_buffer, uint8_t *receive_buffer, uint16_t len, void *callback )
+{
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
+
+  bool valid = UVOS_SPI_validate( spi_dev );
+
+  UVOS_Assert( valid )
+
+  LL_DMA_InitTypeDef dma_init;
+
+  /* Exit if ongoing transfer */
+  if ( LL_DMA_GetDataLength( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream ) ) {
+    return -3;
+  }
+
+  /* Disable the DMA channels */
+  LL_DMA_DisableStream( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream );
+  LL_DMA_DisableStream( spi_dev->cfg->dma.tx.DMAx, spi_dev->cfg->dma.tx.stream );
+
+  while ( LL_DMA_IsEnabledStream( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream ) );
+  while ( LL_DMA_IsEnabledStream( spi_dev->cfg->dma.tx.DMAx, spi_dev->cfg->dma.tx.stream ) );
+
+  /* Disable the SPI peripheral */
+  /* Initialize the SPI block */
+  // LL_SPI_DeInit( spi_dev->cfg->regs );
+  LL_SPI_Init( spi_dev->cfg->regs, ( LL_SPI_InitTypeDef * ) & ( spi_dev->cfg->init ) );
+  // LL_SPI_Disable( spi_dev->cfg->regs );
+
+  /* Configure CRC calculation */
+  if ( spi_dev->cfg->use_crc ) {
+    LL_SPI_EnableCRC( spi_dev->cfg->regs );
+  } else {
+    LL_SPI_DisableCRC( spi_dev->cfg->regs );
+  }
+
+  /* Enable SPI interrupts to DMA */
+  LL_SPI_EnableDMAReq_TX( spi_dev->cfg->regs );
+  LL_SPI_EnableDMAReq_RX( spi_dev->cfg->regs );
+
+  /* Set callback function */
+  spi_dev->callback = callback;
+
+  /*
+   * Configure Rx channel
+   */
+
+  /* Start with the default configuration for this peripheral */
+  dma_init = spi_dev->cfg->dma.rx.init;
+  LL_DMA_DeInit( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream );
+  if ( receive_buffer != NULL ) {
+    /* Enable memory addr. increment - bytes written into receive buffer */
+    dma_init.MemoryOrM2MDstAddress = ( uint32_t )receive_buffer;
+    dma_init.MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT;
+  } else {
+    /* Disable memory addr. increment - bytes written into dummy buffer */
+    spi_dev->rx_dummy_byte = 0xFF;
+    dma_init.MemoryOrM2MDstAddress = ( uint32_t )&spi_dev->rx_dummy_byte;
+    dma_init.MemoryOrM2MDstIncMode = LL_DMA_MEMORY_NOINCREMENT;
+  }
+  if ( spi_dev->cfg->use_crc ) {
+    /* Make sure the CRC error flag is cleared before we start */
+    LL_SPI_ClearFlag_CRCERR( spi_dev->cfg->regs );
+  }
+
+  dma_init.NbData = len;
+  LL_DMA_Init( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream, ( LL_DMA_InitTypeDef * ) & ( dma_init ) );
+
+  /*
+   * Configure Tx channel
+   */
+
+  /* Start with the default configuration for this peripheral */
+  dma_init = spi_dev->cfg->dma.tx.init;
+  LL_DMA_DeInit( spi_dev->cfg->dma.tx.DMAx, spi_dev->cfg->dma.tx.stream );
+  if ( send_buffer != NULL ) {
+    /* Enable memory addr. increment - bytes written into receive buffer */
+    dma_init.MemoryOrM2MDstAddress = ( uint32_t )send_buffer;
+    dma_init.MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT;
+  } else {
+    /* Disable memory addr. increment - bytes written into dummy buffer */
+    spi_dev->tx_dummy_byte = 0xFF;
+    dma_init.MemoryOrM2MDstAddress = ( uint32_t )&spi_dev->tx_dummy_byte;
+    dma_init.MemoryOrM2MDstIncMode = LL_DMA_MEMORY_NOINCREMENT;
+  }
+
+  if ( spi_dev->cfg->use_crc ) {
+    /* The last byte of the payload will be replaced with the CRC8 */
+    dma_init.NbData = len - 1;
+  } else {
+    dma_init.NbData = len;
+  }
+
+  LL_DMA_Init( spi_dev->cfg->dma.tx.DMAx, spi_dev->cfg->dma.tx.stream, ( LL_DMA_InitTypeDef * ) & ( dma_init ) );
+
+  /* Enable DMA interrupt if callback function active */
+  if ( callback != NULL ) {
+    LL_DMA_EnableIT_TC( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream );
+  } else {
+    LL_DMA_DisableIT_TC( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream );
+  }
+
+  /* Flush out the CRC registers */
+  LL_SPI_DisableCRC( spi_dev->cfg->regs );
+  ( void )LL_SPI_GetRxCRC( spi_dev->cfg->regs );
+  LL_SPI_ClearFlag_CRCERR( spi_dev->cfg->regs );
+
+  /* Make sure to flush out the receive buffer */
+  ( void )LL_SPI_ReceiveData8( spi_dev->cfg->regs );
+
+  if ( spi_dev->cfg->use_crc ) {
+    /* Need a 0->1 transition to reset the CRC logic */
+    LL_SPI_EnableCRC( spi_dev->cfg->regs );
+  }
+
+  /* Reenable the SPI device */
+  LL_SPI_Enable( spi_dev->cfg->regs );
+
+  /* Start DMA transfers */
+  LL_DMA_EnableStream( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream );
+  LL_DMA_EnableStream( spi_dev->cfg->dma.tx.DMAx, spi_dev->cfg->dma.tx.stream );
+
+  if ( callback ) {
+    /* User has requested a callback, don't wait for the transfer to complete. */
+    return 0;
+  }
+
+  /* Wait until all bytes have been transmitted/received */
+  while ( LL_DMA_GetDataLength( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream ) ) {
+#if defined(UVOS_INCLUDE_FREERTOS)
+    vTaskDelay( 0 );
+#endif
+    ;
+  }
+
+  /* Wait for the final bytes of the transfer to complete, including CRC byte(s). */
+  while ( !LL_SPI_IsActiveFlag_TXE( spi_dev->cfg->regs ) );
+
+  /* Wait for the final bytes of the transfer to complete, including CRC byte(s). */
+  while ( LL_SPI_IsActiveFlag_BSY( spi_dev->cfg->regs ) );
+
+  /* Check the CRC on the transfer if enabled. */
+  if ( spi_dev->cfg->use_crc ) {
+    /* Check the SPI CRC error flag */
+    if ( LL_SPI_IsActiveFlag_CRCERR( spi_dev->cfg->regs ) ) {
+      return -4;
+    }
+  }
+
+  /* No error */
+  return 0;
+}
+
+#endif // GLS
+
 /**
  * Transfers a block of bytes via Programmed I/O (PIO).
  *
@@ -626,9 +834,9 @@ static int32_t UVOS_SPI_TransferBlock_DMA( uint32_t spi_id, const uint8_t * send
  * \return -1 if disabled SPI port selected
  * \return -3 if function has been called during an ongoing DMA transfer
  */
-static int32_t UVOS_SPI_TransferBlock_PIO( uint32_t spi_id, const uint8_t * send_buffer, uint8_t * receive_buffer, uint16_t len )
+static int32_t UVOS_SPI_TransferBlock_PIO( uint32_t spi_id, const uint8_t *send_buffer, uint8_t *receive_buffer, uint16_t len )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
   uint8_t b;
 
   bool valid = UVOS_SPI_validate( spi_dev );
@@ -687,7 +895,7 @@ static int32_t UVOS_SPI_TransferBlock_PIO( uint32_t spi_id, const uint8_t * send
  * \return -1 if disabled SPI port selected
  * \return -3 if function has been called during an ongoing DMA transfer
  */
-int32_t UVOS_SPI_TransferBlock( uint32_t spi_id, const uint8_t * send_buffer, uint8_t * receive_buffer, uint16_t len, void * callback )
+int32_t UVOS_SPI_TransferBlock( uint32_t spi_id, const uint8_t *send_buffer, uint8_t *receive_buffer, uint16_t len, void *callback )
 {
   if ( callback || len > SPI_MAX_BLOCK_PIO ) {
     return UVOS_SPI_TransferBlock_DMA( spi_id, send_buffer, receive_buffer, len, callback );
@@ -705,7 +913,7 @@ int32_t UVOS_SPI_TransferBlock( uint32_t spi_id, const uint8_t * send_buffer, ui
  */
 int32_t UVOS_SPI_Busy( uint32_t spi_id )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
 
@@ -728,7 +936,7 @@ int32_t UVOS_SPI_Busy( uint32_t spi_id )
 
 void UVOS_SPI_IRQ_Handler( uint32_t spi_id )
 {
-  struct uvos_spi_dev * spi_dev = ( struct uvos_spi_dev * )spi_id;
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
 
   bool valid = UVOS_SPI_validate( spi_dev );
 

@@ -11,6 +11,28 @@ void SysTick_Handler( void );
 #define MEM16(addr) (*((volatile uint16_t *)(addr)))
 #define MEM32(addr) (*((volatile uint32_t *)(addr)))
 
+// static volatile uint32_t sys_tick_count_g = 0;
+static volatile uint32_t sched_tick_count_g = 0;
+
+void noUserSystickCallback() {}
+
+void UserSystickCallback() __attribute__( ( weak, alias( "noUserSystickCallback" ) ) );
+
+void SysTick_Handler( void )
+{
+  sched_tick_count_g++;
+  UserSystickCallback();
+}
+
+/**
+  * @brief Provides a tick value in millisecond.
+  * @retval tick value
+  */
+uint32_t UVOS_SYS_GetTick( void )
+{
+  return sched_tick_count_g;
+}
+
 /**
  * Initialises all system peripherals
  */
@@ -25,13 +47,16 @@ void UVOS_SYS_Init( void )
   NVIC_Configuration();
 
   /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 15, 0));
+  NVIC_SetPriority( SysTick_IRQn, NVIC_EncodePriority( NVIC_GetPriorityGrouping(), 15, 0 ) );
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* Init the delay system */
   UVOS_DELAY_Init();
+
+  /* Turn on the SysTick periodic interrupt */  
+  LL_SYSTICK_EnableIT();
 
   /*
    * Turn on all the peripheral clocks.
@@ -253,7 +278,7 @@ uint32_t UVOS_SYS_getCPUFlashSize( void )
  * (24 digits returned for STM32)
  * return < 0 if feature not supported
  */
-int32_t UVOS_SYS_SerialNumberGetBinary( uint8_t * array )
+int32_t UVOS_SYS_SerialNumberGetBinary( uint8_t *array )
 {
   int i;
 
@@ -274,7 +299,7 @@ int32_t UVOS_SYS_SerialNumberGetBinary( uint8_t * array )
  * (24 digits returned for STM32)
  * return < 0 if feature not supported
  */
-int32_t UVOS_SYS_SerialNumberGet( char * str )
+int32_t UVOS_SYS_SerialNumberGet( char *str )
 {
   int i;
 

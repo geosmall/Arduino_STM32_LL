@@ -2,7 +2,8 @@
 #include <uvos.h>
 #include <lfs.h>
 #include "uw_fs.h"
-#include <uvos_flash_jedec_priv.h>
+#include "uvos_flash_jedec_priv.h"
+#include "uvos_sdcard.h"
 #include "UTIL1.h"
 
 #define FS_FILE_NAME_SIZE  32 /* Length of file name, used in FS buffers */
@@ -27,6 +28,13 @@ uint8_t prog_buf[ LFS_CACHE_SIZE ];
 // and aligned to a 32-bit boundary. By default lfs_malloc is used to
 // allocate this buffer.
 uint8_t lookahead_buf[ LFS_LOOKAHEAD_SIZE ] __attribute__ ( ( aligned ( 4 ) ) );
+
+// From https://github.com/littlefs-project/littlefs/blob/master/SPEC.md :
+// In addition to the logical block_size (which usually matches the erase block size),
+// littlefs also uses a program block size and read block size.
+// These determine the alignment of block device operations,
+// but don't need to be consistent for portability.
+// For W25Q128FV: Page Program (02h) is 256b page, and Sector Erase (20h) = 4096b sector
 
 // configuration of the file system is provided by this struct
 const struct lfs_config FS_cfg = {

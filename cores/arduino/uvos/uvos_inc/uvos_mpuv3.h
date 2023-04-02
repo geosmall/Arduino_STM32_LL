@@ -106,4 +106,10 @@ static const float GYRO_SCALE_4000DPS = (0.0174532f / 8.2f);
 #define INV3_ID_ICM42670      0x67
 #define INV3_ID_ICM45686      0xE9
 
+extern int32_t UVOS_MPUV3_Hardware_Init( mpu_dev_t *dev );
+extern int32_t UVOS_MPUV3_ConfigGyroRange( uvos_mpu_gyro_range_t gyroRange );
+extern int32_t UVOS_MPUV3_ConfigAccelRange( uvos_mpu_accel_range_t accelRange );
+extern int32_t UVOS_MPUV3_ConfigFilter( uvos_mpuv1_filter_t filterSetting );
+extern int32_t UVOS_MPUV3_ConfigSampleRate( uvos_mpuv1_samplerate_div_t sampleRate );
+
 #endif // UVOS_MPUV3_H
