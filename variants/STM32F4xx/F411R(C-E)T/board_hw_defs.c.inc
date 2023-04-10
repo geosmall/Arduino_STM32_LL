@@ -91,7 +91,7 @@ static const struct uvos_gpio_cfg uvos_led_cfg = {
 
 /*
  * SPI1 Interface
- * Used for MPU6000 gyro and accelerometer
+ * Used for Invensense based gyro and accelerometer
  */
 void UVOS_SPI_gyro_irq_handler( void );
 void DMA2_Stream2_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_gyro_irq_handler" ) ) );
@@ -222,12 +222,12 @@ void UVOS_SPI_gyro_irq_handler( void )
 
 /*
  * SPI2 Interface
- * Used for Flash chip
+ * Used for SPI based storage (SPI Flash, SD Card)
  */
-void UVOS_SPI_telem_flash_irq_handler( void );
-void DMA1_Stream3_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_telem_flash_irq_handler" ) ) );
-void DMA1_Stream4_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_telem_flash_irq_handler" ) ) );
-static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
+void UVOS_SPI_storage_irq_handler( void );
+void DMA1_Stream3_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_storage_irq_handler" ) ) );
+void DMA1_Stream4_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_storage_irq_handler" ) ) );
+static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
   .regs  = SPI2,
   .init  = {
     .TransferDirection = LL_SPI_FULL_DUPLEX,
@@ -245,10 +245,10 @@ static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
   .dma     = {
     .irq                                       = {
       // Note this is the stream ID that triggers interrupts (in this case RX)
-      .flags = ( DMA_LISR_TCIF0 | DMA_LISR_TEIF0 | DMA_LISR_HTIF0 ),
+      .flags = ( DMA_LISR_TCIF3 | DMA_LISR_TEIF3 | DMA_LISR_HTIF3 ),
       .init  = {
         .NVIC_IRQChannel    = DMA1_Stream3_IRQn,
-        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
+        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd = ENABLE,
       },
@@ -346,11 +346,11 @@ static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
   },
 };
 
-static uint32_t uvos_spi_telem_flash_id;
-void UVOS_SPI_telem_flash_irq_handler( void )
+static uint32_t uvos_spi_storage_id;
+void UVOS_SPI_storage_irq_handler( void )
 {
   /* Call into the generic code to handle the IRQ for this specific device */
-  UVOS_SPI_IRQ_Handler( uvos_spi_telem_flash_id );
+  UVOS_SPI_IRQ_Handler( uvos_spi_storage_id );
 }
 
 #endif /* UVOS_INCLUDE_SPI */

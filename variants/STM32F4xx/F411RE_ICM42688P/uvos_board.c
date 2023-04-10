@@ -198,12 +198,12 @@ WEAK int32_t UVOS_Board_Init( void )
 
 #if defined( UVOS_INCLUDE_FLASH )
   /* Set up the SPI interface to the flash */
-  if ( UVOS_SPI_Init( &uvos_spi_telem_flash_id, &uvos_spi_telem_flash_cfg ) ) {
+  if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
     return -1;
   }
   // Initialize the external USER flash
   // if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-  if ( UVOS_Flash_Jedec_Init( &uvos_spi_flash_id, uvos_spi_telem_flash_id, 0 ) ) {
+  if ( UVOS_Flash_Jedec_Init( &uvos_spi_storage_id, uvos_spi_storage_id, 0 ) ) {
     return -2;
   }
 
@@ -215,13 +215,13 @@ WEAK int32_t UVOS_Board_Init( void )
 
 #if defined( UVOS_INCLUDE_SDCARD )
   /* Set up the SPI interface to the flash */
-  if ( UVOS_SPI_Init( &uvos_spi_telem_sdcard_id, &uvos_spi_telem_sdcard_cfg ) ) {
+  if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
     return -1;
   }
   /* Enable and mount the SDCard */
-  UVOS_SDCARD_Init( uvos_spi_telem_sdcard_id );
+  UVOS_SDCARD_Init( uvos_spi_storage_id );
 
-  if ( UVOS_SDCARD_MountFS( 1 ) ) {
+  if ( UVOS_SDCARD_MountFS() ) {
     return -2;
   }
 #endif // defined( UVOS_INCLUDE_SDCARD )

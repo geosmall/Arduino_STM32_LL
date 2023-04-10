@@ -91,7 +91,7 @@ static const struct uvos_gpio_cfg uvos_led_cfg = {
 
 /*
  * SPI1 Interface
- * Used for ICM42866P gyro and accelerometer
+ * Used for Invensense based gyro and accelerometer
  */
 void UVOS_SPI_gyro_irq_handler( void );
 void DMA2_Stream2_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_gyro_irq_handler" ) ) );
@@ -222,12 +222,12 @@ void UVOS_SPI_gyro_irq_handler( void )
 
 /*
  * SPI2 Interface
- * Used for SPI SD Card
+ * Used for SPI based storage (SPI Flash, SD Card)
  */
-void UVOS_SPI_telem_sdcard_irq_handler( void );
-void DMA1_Stream3_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_telem_sdcard_irq_handler" ) ) );
-void DMA1_Stream4_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_telem_sdcard_irq_handler" ) ) );
-static const struct uvos_spi_cfg uvos_spi_telem_sdcard_cfg = {
+void UVOS_SPI_storage_irq_handler( void );
+void DMA1_Stream3_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_storage_irq_handler" ) ) );
+void DMA1_Stream4_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_storage_irq_handler" ) ) );
+static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
   .regs  = SPI2,
   .init  = {
     .TransferDirection = LL_SPI_FULL_DUPLEX,
@@ -268,7 +268,7 @@ static const struct uvos_spi_cfg uvos_spi_telem_sdcard_cfg = {
         .PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE,
         .MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_BYTE,
         .NbData = ( uint32_t ) NULL,
-        .Priority = LL_DMA_PRIORITY_HIGH,
+        .Priority = LL_DMA_PRIORITY_MEDIUM,
         .FIFOMode = LL_DMA_FIFOMODE_DISABLE,
         .FIFOThreshold = LL_DMA_FIFOTHRESHOLD_FULL,
         .MemBurst = LL_DMA_MBURST_SINGLE,
@@ -289,7 +289,7 @@ static const struct uvos_spi_cfg uvos_spi_telem_sdcard_cfg = {
         .PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE,
         .MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_BYTE,
         .NbData = ( uint32_t ) NULL,
-        .Priority = LL_DMA_PRIORITY_HIGH,
+        .Priority = LL_DMA_PRIORITY_MEDIUM,
         .FIFOMode = LL_DMA_FIFOMODE_DISABLE,
         .FIFOThreshold = LL_DMA_FIFOTHRESHOLD_FULL,
         .MemBurst = LL_DMA_MBURST_SINGLE,
@@ -346,11 +346,11 @@ static const struct uvos_spi_cfg uvos_spi_telem_sdcard_cfg = {
   },
 };
 
-static uint32_t uvos_spi_telem_sdcard_id;
-void UVOS_SPI_telem_sdcard_irq_handler( void )
+static uint32_t uvos_spi_storage_id;
+void UVOS_SPI_storage_irq_handler( void )
 {
   /* Call into the generic code to handle the IRQ for this specific device */
-  UVOS_SPI_IRQ_Handler( uvos_spi_telem_sdcard_id );
+  UVOS_SPI_IRQ_Handler( uvos_spi_storage_id );
 }
 
 #endif /* UVOS_INCLUDE_SPI */

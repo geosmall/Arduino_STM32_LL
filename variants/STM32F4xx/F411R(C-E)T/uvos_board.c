@@ -98,6 +98,10 @@ uint32_t uvos_com_debug_id;
 uintptr_t uvos_spi_flash_id;
 #endif /* UVOS_INCLUDE_FLASH */
 
+#if defined( UVOS_INCLUDE_SDCARD )
+uintptr_t uvos_spi_sdcard_id;
+#endif /* UVOS_INCLUDE_SDCARD */
+
 // uint32_t uvos_com_gps_id       = 0;
 // uint32_t uvos_com_telem_usb_id = 0;
 uint32_t uvos_com_telem_rf_id  = 0;
@@ -192,18 +196,14 @@ WEAK int32_t UVOS_Board_Init( void )
     return -1;
   }
 
+#if defined( UVOS_INCLUDE_FLASH )
   /* Set up the SPI interface to the flash */
-  if ( UVOS_SPI_Init( &uvos_spi_telem_flash_id, &uvos_spi_telem_flash_cfg ) ) {
+  if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
     return -1;
   }
-
-#if defined( UVOS_INCLUDE_FLASH )
-  /* Connect flash to the appropriate interface and configure it */
-  // uintptr_t flash_id;
-
   // Initialize the external USER flash
   // if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-  if ( UVOS_Flash_Jedec_Init( &uvos_spi_flash_id, uvos_spi_telem_flash_id, 0 ) ) {
+  if ( UVOS_Flash_Jedec_Init( &uvos_spi_flash_id, uvos_spi_storage_id, 0 ) ) {
     return -2;
   }
 
@@ -213,32 +213,18 @@ WEAK int32_t UVOS_Board_Init( void )
 
 #endif // defined( UVOS_INCLUDE_FLASH )
 
-#if 0 // GLS
-// #if defined( UVOS_INCLUDE_FLASH )
-  /* Connect flash to the appropriate interface and configure it */
-  uintptr_t flash_id;
-
-// Initialize the external USER flash
-  if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-    UVOS_DEBUG_Assert( 0 );
+#if defined( UVOS_INCLUDE_SDCARD )
+  /* Set up the SPI interface to the flash */
+  if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
+    return -1;
   }
+  /* Enable and mount the SDCard */
+  UVOS_SDCARD_Init( uvos_spi_storage_id );
 
-  // UVOS_Flash_Jedec_EraseChip( flash_id );
-#if defined( ERASE_SYSTEM_FLASH )
-  UVOS_FLASHFS_Format( uvos_uavo_settings_fs_id );
-#endif // defined( ERASE_SYSTEM_FLASH )
-#if defined( ERASE_USER_FLASH )
-  UVOS_FLASHFS_Format( uvos_user_fs_id );
-#endif // defined( ERASE_USER_FLASH )
-
-  if ( UVOS_FLASHFS_Logfs_Init( &uvos_uavo_settings_fs_id, &flashfs_external_system_cfg, &uvos_jedec_flash_driver, flash_id ) ) {
-    UVOS_DEBUG_Assert( 0 );
+  if ( UVOS_SDCARD_MountFS() ) {
+    return -2;
   }
-
-  if ( UVOS_FLASHFS_Logfs_Init( &uvos_user_fs_id, &flashfs_external_user_cfg, &uvos_jedec_flash_driver, flash_id ) ) {
-    UVOS_DEBUG_Assert( 0 );
-  }
-#endif /* if defined(UVOS_INCLUDE_FLASH) */
+#endif // defined( UVOS_INCLUDE_SDCARD )
 
 #if defined( UVOS_INCLUDE_EXTI )
   UVOS_EXTI_Init( &uvos_exti_user_btn_cfg );

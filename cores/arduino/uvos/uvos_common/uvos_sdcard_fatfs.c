@@ -4,20 +4,11 @@
 
 #ifdef UVOS_INCLUDE_SDCARD
 
-/* Global Variables */
-
-/* Comment out in order to not use UVOS_SPI transfer functions */
-#define USE_UVOS_SPI
-
 /* Local Definitions */
 #if !defined( SDCARD_MUTEX_TAKE )
 #define SDCARD_MUTEX_TAKE            {}
 #define SDCARD_MUTEX_GIVE            {}
 #endif
-
-static uint32_t UVOS_SDCARD_SPI;
-static SPI_TypeDef *sdcard_spi_regs;
-// #define SD_SPIx   SPI2
 
 // #define FCLK_SLOW()  { LL_SPI_SetBaudRatePrescaler(SD_SPIx, LL_SPI_BAUDRATEPRESCALER_DIV128); }
 #define FCLK_SLOW() { UVOS_SPI_SetClockSpeed( UVOS_SDCARD_SPI, UVOS_SPI_PRESCALER_128 ); }
@@ -61,20 +52,39 @@ static SPI_TypeDef *sdcard_spi_regs;
 #define CMD55 (55)    /* APP_CMD */
 #define CMD58 (58)    /* READ_OCR */
 
-static int32_t sdcard_mounted;
+// Define card status values
+typedef enum {
+  SDCARD_STATUS_NOT_MOUNTED = 0,
+  SDCARD_STATUS_MOUNTED = 1
+} uvos_sdcard_status_t;
+
+static bool sdcard_mounted = false;
 static volatile DSTATUS Stat = STA_NOINIT;  /* Physical drive status */
-static volatile UINT Timer1, Timer2;    /* 1kHz decrement timer stopped at zero (disk_timerproc()) */
 static BYTE CardType; /* Card type flags */
+static volatile UINT Timer1;    /* 1kHz decrement timer stopped at zero (disk_timerproc()) */
+
+// Variables for FatFs
+static FATFS FatFs;  //Fatfs handle
+static FRESULT fres; //Result after FatFS operations
+
+// Variables for SD Card SPI interface
+static uint32_t UVOS_SDCARD_SPI;
+static SPI_TypeDef *sdcard_spi_regs;
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
 
-void disk_timerproc ( void );
-
+static void disk_timerproc ( void );
 void UserSystickCallback( void )
 {
   disk_timerproc();
 }
+
+/*--------------------------------------------------------------------------
+
+   Public Functions
+
+---------------------------------------------------------------------------*/
 
 /**
  * Initialises SPI pins and peripheral to access MMC/SD Card
@@ -85,10 +95,16 @@ int32_t UVOS_SDCARD_Init( uint32_t spi_id )
 {
   SDCARD_MUTEX_TAKE;
 
-  sdcard_mounted  = 0;
+  sdcard_mounted = false;
 
   UVOS_SDCARD_SPI = spi_id;
   struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )UVOS_SDCARD_SPI;
+
+  /* Save away the SPI instance if valid */
+  bool valid = IS_SPI_ALL_INSTANCE( spi_dev->cfg->regs );
+  if ( !valid ) {
+    return -1;
+  }
   sdcard_spi_regs = spi_dev->cfg->regs;
 
   /* Init SPI port for slow frequency access (ca. 0.3 MBit/s) */
@@ -101,6 +117,142 @@ int32_t UVOS_SDCARD_Init( uint32_t spi_id )
   return 0;
 }
 
+/**
+ * Mounts the file system
+ * param[in] void
+ * return 0 No errors
+ * return -1 SDCard mount of FatFs unsuccessful
+ */
+int32_t UVOS_SDCARD_MountFS( void )
+{
+  // Open the file system
+  fres = f_mount( &FatFs, "", 1 ); // 1=mount now
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+
+  /* No errors */
+  sdcard_mounted = true;
+  return 0;
+}
+
+/**
+ * Check if the SD card has been mounted
+ * @return 0 if no
+ * @return 1 if yes
+ */
+bool UVOS_SDCARD_IsMounted( void )
+{
+  return sdcard_mounted;
+}
+
+/**
+ * Checks that file system is mounted, fills in SDCARD vol_info
+ * return 0 if successful, -1 if unsuccessful
+ */
+int32_t UVOS_SDCARD_GetVolInfo( SDCARD_vol_info_t *vol_info )
+{
+  //Let's get some statistics from the SD card
+  DWORD free_clusters, free_sectors, total_sectors;
+
+  vol_info->vol_free_Kbytes = 0xffffffff;
+
+  FATFS *getFreeFs;
+
+  if ( !sdcard_mounted ) {
+    return -1;
+  }
+
+  fres = f_getfree( "", &free_clusters, &getFreeFs );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+
+  //Formula comes from ChaN documentation http://elm-chan.org/fsw/ff/doc/getfree.html
+  total_sectors = ( getFreeFs->n_fatent - 2 ) * getFreeFs->csize;
+  free_sectors = free_clusters * getFreeFs->csize;
+
+  // Free space (assumes 512 bytes/sector, for Kb divide by 1024/512 = 2)
+  vol_info->total_sectors = total_sectors;
+  vol_info->free_sectors = free_sectors;
+  vol_info->vol_total_Kbytes = total_sectors / 2;
+  vol_info->vol_free_Kbytes = free_sectors / 2;
+
+  return 0;
+}
+
+/**
+ * Opens or creates a FatFs based file on SD Card
+ * param[in] FatFs FIL *fp Pointer to the blank file object structure
+ * param[in] path Pointer to null-terminated string that specifies the file name to open or create.
+ * param[in] mode Flags that specifies the type of access and open method for the file
+ * return 0 if file open is successful, -1 if unsuccessful
+ */
+int32_t UVOS_SDCARD_Open( FIL *fp, const char *path, int32_t mode )
+{
+  fres = f_open( fp, path, ( BYTE )mode );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+int32_t UVOS_SDCARD_Read( FIL *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+{
+  fres = f_read( fp, buf, bytes_to_read, ( UINT * )bytes_read );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+int32_t UVOS_SDCARD_Write( FIL *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
+{
+  fres = f_write( fp, buf, bytes_to_write, ( UINT * )bytes_written );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+int32_t UVOS_SDCARD_Seek( FIL *fp, uint32_t offset )
+{
+  fres = f_lseek( fp, offset );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+uint32_t UVOS_SDCARD_Tell( FIL *fp )
+{
+  return ( uint32_t )f_tell( fp );
+}
+
+int32_t UVOS_SDCARD_Close( FIL *fp )
+{
+  fres = f_close( fp );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+int32_t UVOS_SDCARD_Remove( const char *path )
+{
+  fres = f_unlink( path );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+/*--------------------------------------------------------------------------
+
+   Private Functions
+
+---------------------------------------------------------------------------*/
+
 /* Exchange a byte */
 static BYTE xchg_spi (
   BYTE dat  /* Data to send */
@@ -109,11 +261,9 @@ static BYTE xchg_spi (
   return UVOS_SPI_TransferByte( UVOS_SDCARD_SPI, dat );
 }
 
-#if defined (USE_UVOS_SPI)
-
 /* Receive multiple byte */
 // static void rcvr_spi_multi (
-void rcvr_spi_multi (
+static void rcvr_spi_multi (
   BYTE *buff,   /* Pointer to data buffer */
   UINT brx    /* Number of bytes to receive (even number) */
 )
@@ -124,7 +274,7 @@ void rcvr_spi_multi (
 #if FF_FS_READONLY == 0
 
 /* Send multiple byte */
-void xmit_spi_multi (
+static void xmit_spi_multi (
   const BYTE *buff, /* Pointer to the data */
   UINT btx      /* Number of bytes to send (even number) */
 )
@@ -133,81 +283,6 @@ void xmit_spi_multi (
 }
 
 #endif // FF_FS_READONLY == 0
-
-#else // defined (USE_UVOS_SPI)
-
-static const UINT flags = ( LL_SPI_SR_BSY | LL_SPI_SR_TXE | LL_SPI_SR_RXNE );
-static const UINT complete = ( LL_SPI_SR_TXE | LL_SPI_SR_RXNE );
-
-/* Receive multiple byte */
-// static void rcvr_spi_multi (
-void rcvr_spi_multi (
-  BYTE *buff,   /* Pointer to data buffer */
-  UINT brx    /* Number of bytes to receive (even number) */
-)
-{
-  WORD d;
-
-  /* Put SPI into 16-bit mode */
-  LL_SPI_SetDataWidth( sdcard_spi_regs, LL_SPI_DATAWIDTH_16BIT );
-
-  /* Receive the data block into buffer */
-  LL_SPI_TransmitData16( sdcard_spi_regs, 0xFFFF );
-  brx -= 2;
-  do {
-    while ( ( sdcard_spi_regs->SR & flags ) != complete );  /* Wait for end of the SPI transaction */
-    d = LL_SPI_ReceiveData16( sdcard_spi_regs );  /* Get received word */
-    LL_SPI_TransmitData16( sdcard_spi_regs, 0xFFFF );  /* Start next transaction */
-    buff[1] = d; buff[0] = d >> 8;  /* Store received data */
-    buff += 2;
-  } while ( brx -= 2 );
-  while ( ( sdcard_spi_regs->SR & flags ) != complete );  /* Wait for end of the SPI transaction */
-  d = LL_SPI_ReceiveData16( sdcard_spi_regs );  /* Get last word received */
-  buff[1] = d; buff[0] = d >> 8;  /* Store it */
-
-  /* Put SPI into 8-bit mode */
-  LL_SPI_SetDataWidth( sdcard_spi_regs, LL_SPI_DATAWIDTH_8BIT );
-}
-
-#if FF_FS_READONLY == 0
-
-/* Send multiple byte */
-// static void xmit_spi_multi (
-void xmit_spi_multi (
-  const BYTE *buff, /* Pointer to the data */
-  UINT btx      /* Number of bytes to send (even number) */
-)
-{
-  WORD d;
-
-  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )UVOS_SDCARD_SPI;
-  SPI_TypeDef *sdcard_spi_regs = spi_dev->cfg->regs;
-
-  /* Put SPI into 16-bit mode */
-  LL_SPI_SetDataWidth( spi_dev->cfg->regs, LL_SPI_DATAWIDTH_16BIT );
-
-  /* Transmit the data block from buffer */
-  d = buff[0] << 8 | buff[1];
-  buff += 2;
-  LL_SPI_TransmitData16( spi_dev->cfg->regs, d );
-  btx -= 2;
-  do {
-    d = buff[0] << 8 | buff[1]; buff += 2;  /* Word to send next */
-    while ( ( sdcard_spi_regs->SR & flags ) != complete );  /* Wait for end of the SPI transaction */
-    LL_SPI_ReceiveData16( sdcard_spi_regs );  /* Discard received word */
-    LL_SPI_TransmitData16( sdcard_spi_regs, d );  /* Start next transaction */
-  } while ( btx -= 2 );
-  while ( ( sdcard_spi_regs->SR & flags ) != complete );  /* Wait for end of the SPI transaction */
-  LL_SPI_ReceiveData16( sdcard_spi_regs );  /* Discard received word */
-
-  /* Put SPI into 8-bit mode */
-  LL_SPI_SetDataWidth( sdcard_spi_regs, LL_SPI_DATAWIDTH_8BIT );
-}
-
-#endif // FF_FS_READONLY == 0
-
-#endif // defined (USE_UVOS_SPI)
-
 
 /*-----------------------------------------------------------------------*/
 /* Wait for card ready                                                   */
@@ -233,32 +308,29 @@ static int wait_ready ( /* 1:Ready, 0:Timeout */
   return ( d == 0xFF ) ? 1 : 0;
 }
 
-
 /*-----------------------------------------------------------------------*/
 /* Deselect card and release SPI                                         */
 /*-----------------------------------------------------------------------*/
 
-static void UVOS_SDCARD_deselect ( void )
+static void sdcard_deselect ( void )
 {
   CS_HIGH();    /* Set CS# high */
   xchg_spi( 0xFF ); /* Dummy clock (force DO hi-z for multiple slave SPI) */
 }
 
-
 /*-----------------------------------------------------------------------*/
 /* Select card and wait for ready                                        */
 /*-----------------------------------------------------------------------*/
 
-static int UVOS_SDCARD_select ( void )  /* 1:OK, 0:Timeout */
+static int sdcard_select ( void )  /* 1:OK, 0:Timeout */
 {
   CS_LOW();   /* Set CS# low */
   xchg_spi( 0xFF ); /* Dummy clock (force DO enabled) */
   if ( wait_ready( WAIT_READY_MS ) ) return 1;  /* Wait for card ready */
 
-  UVOS_SDCARD_deselect();
+  sdcard_deselect();
   return 0; /* Timeout */
 }
-
 
 /*-----------------------------------------------------------------------*/
 /* Receive a data packet from the MMC                                    */
@@ -285,7 +357,6 @@ static int rcvr_datablock ( /* 1:OK, 0:Error */
   return 1;           /* Function succeeded */
 }
 
-
 /*-----------------------------------------------------------------------*/
 /* Send a data packet to the MMC                                         */
 /*-----------------------------------------------------------------------*/
@@ -299,7 +370,7 @@ static int xmit_datablock ( /* 1:OK, 0:Failed */
   BYTE resp;
 
 
-  if ( !wait_ready( 500 ) ) return 0;   /* Wait for card ready */
+  if ( !wait_ready( WAIT_READY_MS ) ) return 0;   /* Wait for card ready */
 
   xchg_spi( token );          /* Send token */
   if ( token != 0xFD ) {        /* Send data if token is other than StopTran */
@@ -312,7 +383,6 @@ static int xmit_datablock ( /* 1:OK, 0:Failed */
   return 1;
 }
 #endif
-
 
 /*-----------------------------------------------------------------------*/
 /* Send a command packet to the MMC                                      */
@@ -334,8 +404,8 @@ static BYTE send_cmd (  /* Return value: R1 resp (bit7==1:Failed to send) */
 
   /* Select the card and wait for ready except to stop multiple block read */
   if ( cmd != CMD12 ) {
-    UVOS_SDCARD_deselect();
-    if ( !UVOS_SDCARD_select() ) return 0xFF;
+    sdcard_deselect();
+    if ( !sdcard_select() ) return 0xFF;
   }
 
   /* Send command packet */
@@ -359,16 +429,14 @@ static BYTE send_cmd (  /* Return value: R1 resp (bit7==1:Failed to send) */
   return res;             /* Return received response */
 }
 
-
 /*--------------------------------------------------------------------------
 
-   Public Functions
+   FatFS disk I/O User Defined Functions (see diskio.h)
 
 ---------------------------------------------------------------------------*/
 
-
 /*-----------------------------------------------------------------------*/
-/* Initialize disk drive                                                 */
+/* Initialize disk                                                       */
 /*-----------------------------------------------------------------------*/
 
 DSTATUS disk_initialize (
@@ -410,7 +478,7 @@ DSTATUS disk_initialize (
     }
   }
   CardType = ty;  /* Card type */
-  UVOS_SDCARD_deselect();
+  sdcard_deselect();
 
   if ( ty ) {     /* OK */
     FCLK_FAST();      /* Set fast clock */
@@ -421,7 +489,6 @@ DSTATUS disk_initialize (
 
   return Stat;
 }
-
 
 /*-----------------------------------------------------------------------*/
 /* Get disk status                                                       */
@@ -435,7 +502,6 @@ DSTATUS disk_status (
 
   return Stat;  /* Return disk status */
 }
-
 
 /*-----------------------------------------------------------------------*/
 /* Read sector(s)                                                        */
@@ -470,11 +536,10 @@ DRESULT disk_read (
       send_cmd( CMD12, 0 );       /* STOP_TRANSMISSION */
     }
   }
-  UVOS_SDCARD_deselect();
+  sdcard_deselect();
 
   return count ? RES_ERROR : RES_OK;  /* Return result */
 }
-
 
 /*-----------------------------------------------------------------------*/
 /* Write sector(s)                                                       */
@@ -512,12 +577,11 @@ DRESULT disk_write (
       if ( !xmit_datablock( 0, 0xFD ) ) count = 1;  /* STOP_TRAN token */
     }
   }
-  UVOS_SDCARD_deselect();
+  sdcard_deselect();
 
   return count ? RES_ERROR : RES_OK;  /* Return result */
 }
 #endif
-
 
 /*-----------------------------------------------------------------------*/
 /* Miscellaneous drive controls other than data read/write               */
@@ -542,7 +606,7 @@ DRESULT disk_ioctl (
 
   switch ( cmd ) {
   case CTRL_SYNC :    /* Wait for end of internal write process of the drive */
-    if ( UVOS_SDCARD_select() ) res = RES_OK;
+    if ( sdcard_select() ) res = RES_OK;
     break;
 
   case GET_SECTOR_COUNT : /* Get drive capacity in unit of sector (DWORD) */
@@ -631,11 +695,10 @@ DRESULT disk_ioctl (
     res = RES_PARERR;
   }
 
-  UVOS_SDCARD_deselect();
+  sdcard_deselect();
 
   return res;
 }
-
 
 /*-----------------------------------------------------------------------*/
 /* Device timer function                                                 */
@@ -644,16 +707,13 @@ DRESULT disk_ioctl (
 /  of 1 ms to generate card control timing.
 */
 
-void disk_timerproc ( void )
+static void disk_timerproc ( void )
 {
   WORD n;
   BYTE s;
 
-
   n = Timer1;           /* 1kHz decrement timer stopped at 0 */
   if ( n ) Timer1 = --n;
-  n = Timer2;
-  if ( n ) Timer2 = --n;
 
   s = Stat;
   if ( MMC_WP ) { /* Write protected */

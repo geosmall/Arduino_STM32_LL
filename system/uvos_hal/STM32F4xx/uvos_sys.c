@@ -11,8 +11,8 @@ void SysTick_Handler( void );
 #define MEM16(addr) (*((volatile uint16_t *)(addr)))
 #define MEM32(addr) (*((volatile uint32_t *)(addr)))
 
-// static volatile uint32_t sys_tick_count_g = 0;
-static volatile uint32_t sched_tick_count_g = 0;
+static volatile uint32_t sys_tick_count_g = 0;
+// static volatile uint32_t sched_tick_count_g = 0;
 
 void noUserSystickCallback() {}
 
@@ -20,7 +20,7 @@ void UserSystickCallback() __attribute__( ( weak, alias( "noUserSystickCallback"
 
 void SysTick_Handler( void )
 {
-  sched_tick_count_g++;
+  sys_tick_count_g++;
   UserSystickCallback();
 }
 
@@ -30,7 +30,7 @@ void SysTick_Handler( void )
   */
 uint32_t UVOS_SYS_GetTick( void )
 {
-  return sched_tick_count_g;
+  return sys_tick_count_g;
 }
 
 /**

@@ -135,15 +135,16 @@ extern "C" {
 
 #ifdef UVOS_INCLUDE_SDCARD
 #define LOG_FILENAME "startup.log"
-#include <dosfs.h>
-#include <uvos_sdcard.h>
+#include <ff.h>
+#include <uvos_sdcard_fatfs.h>
 #endif
 
 #ifdef UVOS_INCLUDE_FLASH
 /* #define UVOS_INCLUDE_FLASH_LOGFS_SETTINGS */
 /* #define FLASH_FREERTOS */
 #include <uvos_flash.h>
-#include <uvos_flashfs.h>
+// #include <uvos_flashfs.h>
+#include <lfs.h>
 #endif
 
 /* UVOS abstract comms interface with options */
