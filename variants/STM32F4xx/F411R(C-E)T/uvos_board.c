@@ -94,13 +94,13 @@ uint32_t uvos_rcvr_group_map[ UVOS_RCVR_CHANNELGROUPS_NONE ];
 uint32_t uvos_com_debug_id;
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
-#if defined(UVOS_INCLUDE_FLASH)
-uintptr_t uvos_spi_flash_id;
-#endif /* UVOS_INCLUDE_FLASH */
+// #if defined(UVOS_INCLUDE_FLASH)
+// uintptr_t uvos_spi_flash_id;
+// #endif /* UVOS_INCLUDE_FLASH */
 
-#if defined( UVOS_INCLUDE_SDCARD )
-uintptr_t uvos_spi_sdcard_id;
-#endif /* UVOS_INCLUDE_SDCARD */
+// #if defined( UVOS_INCLUDE_SDCARD )
+// uintptr_t uvos_spi_sdcard_id;
+// #endif /* UVOS_INCLUDE_SDCARD */
 
 // uint32_t uvos_com_gps_id       = 0;
 // uint32_t uvos_com_telem_usb_id = 0;
@@ -202,10 +202,19 @@ WEAK int32_t UVOS_Board_Init( void )
     return -1;
   }
   // Initialize the external USER flash
-  // if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-  if ( UVOS_Flash_Jedec_Init( &uvos_spi_flash_id, uvos_spi_storage_id, 0 ) ) {
+  // if ( UVOS_Flash_Jedec_Init( &uvos_spi_flash_id, uvos_spi_storage_id, 0 ) ) {
+  //   return -2;
+  // }
+
+  /* Enable and mount the SPI Flash */
+  int32_t ret = UVOS_SPIF_Init( uvos_spi_storage_id );
+  if ( ret < 0 ) {
     return -2;
   }
+
+  // if ( UVOS_SPIF_MountFS() ) {
+  //   return -3;
+  // }
 
 #if defined( ERASE_SYSTEM_FLASH )
   UVOS_Flash_Jedec_EraseChip( uvos_spi_flash_id );

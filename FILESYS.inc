@@ -72,6 +72,9 @@ typedef enum {
     FOPEN_MODE_APX = LFS_O_RDWR   | LFS_O_CREAT | LFS_O_EXCL | LFS_O_APPEND  // Open for reading and writing, fail if exists or append
 } fopen_mode_t;
 
+// Define an error code for invalid mode string
+#define FOPEN_MODE_ERROR -1
+
 /**
  * @brief A function that converts a string of fopen mode flags to an enum value.
  *
@@ -82,7 +85,33 @@ typedef enum {
  * @param mode The string of fopen mode flags.
  * @return The enum value of the mode flags or -1 if invalid.
  */
-fopen_mode_t fopen_mode_from_string(const char* mode);
+fopen_mode_t fopen_mode_str_to_enum(const char *mode_str) {
+  // Check if the mode string is null or empty
+  if (mode_str == NULL || mode_str[0] == '\0') {
+    return FOPEN_MODE_ERROR;
+  }
+
+  // Compare the mode string with the valid values and return the corresponding enum value
+  if (strcmp(mode_str, "r") == 0) {
+    return FOPEN_MODE_R;
+  } else if (strcmp(mode_str, "w") == 0) {
+    return FOPEN_MODE_W;
+  } else if (strcmp(mode_str, "a") == 0) {
+    return FOPEN_MODE_A;
+  } else if (strcmp(mode_str, "r+") == 0) {
+    return FOPEN_MODE_RP;
+  } else if (strcmp(mode_str, "w+") == 0) {
+    return FOPEN_MODE_WP;
+  } else if (strcmp(mode_str, "a+") == 0) {
+    return FOPEN_MODE_AP;
+  } else {
+    // The mode string is invalid
+    return FOPEN_MODE_ERROR;
+  }
+}
+
+
+
 
 //===============================================================================
 

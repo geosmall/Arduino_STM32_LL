@@ -1,5 +1,6 @@
 #include "uvos.h"
 #include "uvos_spi_priv.h"
+#include "uvos_fs_driver.h"
 #include "diskio.h" // FatFS interface
 
 #ifdef UVOS_INCLUDE_SDCARD
@@ -15,16 +16,11 @@
 // #define FCLK_FAST()  { LL_SPI_SetBaudRatePrescaler(SD_SPIx, LL_SPI_BAUDRATEPRESCALER_DIV8); }
 #define FCLK_FAST() { UVOS_SPI_SetClockSpeed( UVOS_SDCARD_SPI, UVOS_SPI_PRESCALER_8 ); }
 
-// #define CS_HIGH()      { LL_GPIO_SetOutputPin(SD_CS_GPIO_Port, SD_CS_Pin); }
 #define CS_HIGH() { UVOS_SPI_RC_PinSet( UVOS_SDCARD_SPI, 0, 1 ); }/* spi_id, slave_id, pin_value */
-// #define CS_LOW()     { LL_GPIO_ResetOutputPin(SD_CS_GPIO_Port, SD_CS_Pin); }
 #define CS_LOW()  { UVOS_SPI_RC_PinSet( UVOS_SDCARD_SPI, 0, 0 ); }/* spi_id, slave_id, pin_value */
 
 #define MMC_CD        1 /* Assumes card detect (yes:true, no:false, default:true) */
 #define MMC_WP        0 /* Assume write off protected (yes:true, no:false, default:false) */
-// #define SPIx_CR1      SD_SPIx->CR1
-// #define SPIx_SR       SD_SPIx->SR
-// #define SPIx_DR       SD_SPIx->DR
 #define WAIT_READY_MS 500 /* Time (mSec) to wait for card ready */
 
 // _BV Converts a bit number into a Byte Value (BV).
@@ -73,6 +69,8 @@ static SPI_TypeDef *sdcard_spi_regs;
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
+
+static int UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fopen_mode_t mode );
 
 static void disk_timerproc ( void );
 void UserSystickCallback( void )
@@ -128,6 +126,7 @@ int32_t UVOS_SDCARD_MountFS( void )
   // Open the file system
   fres = f_mount( &FatFs, "", 1 ); // 1=mount now
   if ( fres != FR_OK ) {
+    spif_mounted = false;
     return -1;
   }
 
@@ -150,33 +149,30 @@ bool UVOS_SDCARD_IsMounted( void )
  * Checks that file system is mounted, fills in SDCARD vol_info
  * return 0 if successful, -1 if unsuccessful
  */
-int32_t UVOS_SDCARD_GetVolInfo( SDCARD_vol_info_t *vol_info )
+int32_t UVOS_SDCARD_GetVolInfo( uvos_fs_vol_info_t *vol_info )
 {
   //Let's get some statistics from the SD card
   DWORD free_clusters, free_sectors, total_sectors;
 
-  vol_info->vol_free_Kbytes = 0xffffffff;
-
-  FATFS *getFreeFs;
+  FATFS *fs_ptr = &FatFs;
 
   if ( !sdcard_mounted ) {
     return -1;
   }
 
-  fres = f_getfree( "", &free_clusters, &getFreeFs );
+  fres = f_getfree( "", &free_clusters, &fs_ptr );
   if ( fres != FR_OK ) {
     return -1;
   }
 
   //Formula comes from ChaN documentation http://elm-chan.org/fsw/ff/doc/getfree.html
-  total_sectors = ( getFreeFs->n_fatent - 2 ) * getFreeFs->csize;
-  free_sectors = free_clusters * getFreeFs->csize;
+  total_sectors = ( fs_ptr->n_fatent - 2 ) * fs_ptr->csize;
+  free_sectors = free_clusters * fs_ptr->csize;
 
   // Free space (assumes 512 bytes/sector, for Kb divide by 1024/512 = 2)
-  vol_info->total_sectors = total_sectors;
-  vol_info->free_sectors = free_sectors;
   vol_info->vol_total_Kbytes = total_sectors / 2;
   vol_info->vol_free_Kbytes = free_sectors / 2;
+  vol_info->type = FS_TYPE_FATFS;
 
   return 0;
 }
@@ -188,50 +184,51 @@ int32_t UVOS_SDCARD_GetVolInfo( SDCARD_vol_info_t *vol_info )
  * param[in] mode Flags that specifies the type of access and open method for the file
  * return 0 if file open is successful, -1 if unsuccessful
  */
-int32_t UVOS_SDCARD_Open( FIL *fp, const char *path, int32_t mode )
+int32_t UVOS_SDCARD_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode )
 {
-  fres = f_open( fp, path, ( BYTE )mode );
+  fres = f_open( ( FIL * )fp, path, ( BYTE )UVOS_SDCARD_fopen_mode_str_to_enum( mode ) );
   if ( fres != FR_OK ) {
     return -1;
   }
   return 0;
 }
 
-int32_t UVOS_SDCARD_Read( FIL *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+// int32_t UVOS_SDCARD_Read( FIL *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+int32_t UVOS_SDCARD_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
-  fres = f_read( fp, buf, bytes_to_read, ( UINT * )bytes_read );
+  fres = f_read( ( FIL * )fp, buf, bytes_to_read, ( UINT * )bytes_read );
   if ( fres != FR_OK ) {
     return -1;
   }
   return 0;
 }
 
-int32_t UVOS_SDCARD_Write( FIL *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
+int32_t UVOS_SDCARD_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
 {
-  fres = f_write( fp, buf, bytes_to_write, ( UINT * )bytes_written );
+  fres = f_write( ( FIL * )fp, buf, bytes_to_write, ( UINT * )bytes_written );
   if ( fres != FR_OK ) {
     return -1;
   }
   return 0;
 }
 
-int32_t UVOS_SDCARD_Seek( FIL *fp, uint32_t offset )
+int32_t UVOS_SDCARD_Seek( uintptr_t *fp, uint32_t offset )
 {
-  fres = f_lseek( fp, offset );
+  fres = f_lseek( ( FIL * )fp, offset );
   if ( fres != FR_OK ) {
     return -1;
   }
   return 0;
 }
 
-uint32_t UVOS_SDCARD_Tell( FIL *fp )
+uint32_t UVOS_SDCARD_Tell( uintptr_t *fp )
 {
-  return ( uint32_t )f_tell( fp );
+  return ( uint32_t )f_tell( ( FIL * )fp );
 }
 
-int32_t UVOS_SDCARD_Close( FIL *fp )
+int32_t UVOS_SDCARD_Close( uintptr_t *fp )
 {
-  fres = f_close( fp );
+  fres = f_close( ( FIL * )fp );
   if ( fres != FR_OK ) {
     return -1;
   }
@@ -253,6 +250,36 @@ int32_t UVOS_SDCARD_Remove( const char *path )
 
 ---------------------------------------------------------------------------*/
 
+/* Convert UVOS file open enum to FatFs mode */
+static int UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fopen_mode_t mode )
+{
+  if ( mode == FOPEN_MODE_INVALID ) {
+    return -1;
+  }
+
+  // Compare the mode with valid values and return the corresponding enum value
+  if ( mode == FOPEN_MODE_R ) {
+    return ( FATFS_FOPEN_MODE_R ); // POSIX "r"
+  } else if ( mode == FOPEN_MODE_W ) {
+    return ( FATFS_FOPEN_MODE_W );  // POSIX "w"
+  } else if ( mode == FOPEN_MODE_A ) {
+    return ( FATFS_FOPEN_MODE_A );  // POSIX "a"
+  } else if ( mode == FOPEN_MODE_RP ) {
+    return ( FATFS_FOPEN_MODE_RP );  // POSIX "r+"
+  } else if ( mode == FOPEN_MODE_WP ) {
+    return ( FATFS_FOPEN_MODE_WP );  // POSIX "w+"
+  } else if ( mode == FOPEN_MODE_AP ) {
+    return ( FATFS_FOPEN_MODE_AP );  // POSIX "a+"
+  } else if ( mode == FOPEN_MODE_WX ) {
+    return ( FATFS_FOPEN_MODE_WX );  // POSIX "wx"
+  } else if ( mode == FOPEN_MODE_WPX ) {
+    return ( FATFS_FOPEN_MODE_WPX );  // POSIX "w+x"
+  } else {
+    // Mode is invalid
+    return -1;
+  }
+}
+
 /* Exchange a byte */
 static BYTE xchg_spi (
   BYTE dat  /* Data to send */
@@ -262,7 +289,6 @@ static BYTE xchg_spi (
 }
 
 /* Receive multiple byte */
-// static void rcvr_spi_multi (
 static void rcvr_spi_multi (
   BYTE *buff,   /* Pointer to data buffer */
   UINT brx    /* Number of bytes to receive (even number) */

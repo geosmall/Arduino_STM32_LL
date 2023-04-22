@@ -94,13 +94,13 @@ uint32_t uvos_rcvr_group_map[ UVOS_RCVR_CHANNELGROUPS_NONE ];
 uint32_t uvos_com_debug_id;
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
-#if defined(UVOS_INCLUDE_FLASH)
-uintptr_t uvos_spi_flash_id;
-#endif /* UVOS_INCLUDE_FLASH */
+// #if defined(UVOS_INCLUDE_FLASH)
+// uintptr_t uvos_spi_flash_id;
+// #endif /* UVOS_INCLUDE_FLASH */
 
-#if defined( UVOS_INCLUDE_SDCARD )
-uintptr_t uvos_spi_sdcard_id;
-#endif /* UVOS_INCLUDE_SDCARD */
+// #if defined( UVOS_INCLUDE_SDCARD )
+// uintptr_t uvos_spi_sdcard_id;
+// #endif /* UVOS_INCLUDE_SDCARD */
 
 // uint32_t uvos_com_gps_id       = 0;
 // uint32_t uvos_com_telem_usb_id = 0;

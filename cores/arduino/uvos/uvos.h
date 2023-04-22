@@ -143,8 +143,8 @@ extern "C" {
 /* #define UVOS_INCLUDE_FLASH_LOGFS_SETTINGS */
 /* #define FLASH_FREERTOS */
 #include <uvos_flash.h>
-// #include <uvos_flashfs.h>
 #include <lfs.h>
+#include <uvos_spif_lfs.h>
 #endif
 
 /* UVOS abstract comms interface with options */

@@ -1,26 +1,27 @@
 #include "uvos.h"
 #include "uvos_spi_priv.h"
+#include "uvos_fs_driver.h"
 #include "uvos_flash_jedec_priv.h"
 
 #ifdef UVOS_INCLUDE_FLASH
 
 #define FS_FILE_NAME_SIZE  32 /* Length of file name, used in FS buffers */
-#define LFS_CACHE_SIZE 256
+#define LFS_PAGE_SIZE 256
 #define LFS_LOOKAHEAD_SIZE 512
-#define PRN_BUFFER_SIZE  128
+// #define PRN_BUFFER_SIZE  128
 
-static int block_device_read( const struct lfs_config * c, lfs_block_t block,  lfs_off_t off, void * buffer, lfs_size_t size );
-static int block_device_prog( const struct lfs_config * c, lfs_block_t block, lfs_off_t off, const void * buffer, lfs_size_t size );
-static int block_device_erase( const struct lfs_config * c, lfs_block_t block );
-static int block_device_sync( const struct lfs_config * c );
+static int block_device_read( const struct lfs_config *c, lfs_block_t block,  lfs_off_t off, void *buffer, lfs_size_t size );
+static int block_device_prog( const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size );
+static int block_device_erase( const struct lfs_config *c, lfs_block_t block );
+static int block_device_sync( const struct lfs_config *c );
 
 // Optional statically allocated read buffer. Must be cache_size.
 // By default lfs_malloc is used to allocate this buffer.
-uint8_t read_buf[ LFS_CACHE_SIZE ];
+uint8_t read_buf[ LFS_PAGE_SIZE ];
 
 // Optional statically allocated program buffer. Must be cache_size.
 // By default lfs_malloc is used to allocate this buffer.
-uint8_t prog_buf[ LFS_CACHE_SIZE ];
+uint8_t prog_buf[ LFS_PAGE_SIZE ];
 
 // Optional statically allocated lookahead buffer. Must be lookahead_size
 // and aligned to a 32-bit boundary. By default lfs_malloc is used to
@@ -42,12 +43,12 @@ const struct lfs_config FS_cfg = {
   .erase = block_device_erase,
   .sync  = block_device_sync,
   // chip info
-  .read_size = LFS_CACHE_SIZE,
-  .prog_size = LFS_CACHE_SIZE,
+  .read_size = LFS_PAGE_SIZE,
+  .prog_size = LFS_PAGE_SIZE,
   .block_size = 4096,
   .block_count = 4096,
   .block_cycles = 500,
-  .cache_size = LFS_CACHE_SIZE,
+  .cache_size = LFS_PAGE_SIZE,
   .lookahead_size = LFS_LOOKAHEAD_SIZE,
   .read_buffer = read_buf,
   .prog_buffer = prog_buf,
@@ -86,9 +87,18 @@ static bool spif_mounted = false;
 static lfs_t FS_lfs;
 static int fres; //Result after LittleFS operations
 
-// Variables for SD Card SPI interface
+// Variables for SPI Flash interface
 static uint32_t UVOS_SPIF_SPI;
 static SPI_TypeDef *spif_spi_regs;
+// static uintptr_t uvos_spif_jedec_id;
+uintptr_t uvos_spif_jedec_id;
+
+#ifdef LFS_NO_MALLOC
+static uint8_t file_buffer[ LFS_PAGE_SIZE ];
+static struct lfs_file_config file_cfg = {
+  .buffer = file_buffer
+};
+#endif // LFS_NO_MALLOC
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
@@ -123,7 +133,12 @@ int32_t UVOS_SPIF_Init( uint32_t spi_id )
   /* Init SPI port for slow frequency access (ca. 0.3 MBit/s) */
   FCLK_SLOW();
 
-  UVOS_SPI_TransferByte( UVOS_SPIF_SPI, 0xFF );
+  UVOS_SPI_TransferByte( spi_id, 0xFF );
+
+  if ( UVOS_Flash_Jedec_Init( &uvos_spif_jedec_id, spi_id, 0 ) ) {
+    return -2;
+  }
+
   SPIF_MUTEX_GIVE;
 
   /* No error */
@@ -134,13 +149,14 @@ int32_t UVOS_SPIF_Init( uint32_t spi_id )
  * Mounts the file system
  * param[in] void
  * return 0 No errors
- * return -1 SPI Flash mount of FatFs unsuccessful
+ * return -1 SPI Flash mount of LittleFS unsuccessful
  */
 int32_t UVOS_SPIF_MountFS( void )
 {
   // Open the file system
   fres = lfs_mount( &FS_lfs, &FS_cfg );
   if ( fres != LFS_ERR_OK ) {
+    spif_mounted = false;
     return -1;
   }
 
@@ -159,15 +175,162 @@ bool UVOS_SPIF_IsMounted( void )
   return spif_mounted;
 }
 
+/**
+ * Format the file system
+ * param[in] void
+ * return 0 No errors
+ * return -1 SPI Flash format of LittleFS unsuccessful
+ */
+int32_t UVOS_SPIF_Format( void )
+{
+  // Format the file system
+  fres = lfs_format( &FS_lfs, &FS_cfg );
+  if ( fres != LFS_ERR_OK ) {
+    return -1;
+  }
+
+  /* No errors */
+  return 0;
+}
+
+/**
+ * Checks that file system is mounted, fills in SPIF vol_info
+ * return 0 if successful, -1 if unsuccessful
+ */
+int32_t UVOS_SPIF_GetVolInfo( uvos_fs_vol_info_t *vol_info )
+{
+  // Free space (assumes 4Kb/block, for Kb divide by 4096/1024 = 4)
+  // uint32_t total_Kb = ( FS_lfs.cfg->block_count * FS_lfs.cfg->block_size ) / 1024;
+  lfs_ssize_t blocks_used = lfs_fs_size( &FS_lfs );
+  if ( blocks_used < 0 ) {
+    return -1;
+  }
+  uint32_t used_Kb = ( blocks_used * FS_lfs.cfg->block_size ) / 1024;
+
+  vol_info->vol_total_Kbytes = ( FS_lfs.cfg->block_count * FS_lfs.cfg->block_size ) / 1024;
+  vol_info->vol_free_Kbytes = vol_info->vol_total_Kbytes - used_Kb;
+  vol_info->type = FS_TYPE_LITTLEFS;
+
+  return 0;
+}
+
+/**
+ * Opens or creates a LittleFS based file on SPI Flash device
+ * param[in] LittleFS *fp Pointer to the blank file object structure
+ * param[in] path Pointer to null-terminated string that specifies the file name to open or create.
+ * param[in] mode Flags that specifies the type of access and open method for the file
+ * return 0 if file open is successful, -1 if unsuccessful
+ */
+int32_t UVOS_SPIF_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode )
+{
+  // fres = f_open( ( FIL * )fp, path, ( BYTE )mode );
+  // if ( fres != FR_OK ) {
+  //   return -1;
+  // }
+
+  /* open source file */
+#ifdef LFS_NO_MALLOC
+  fres = lfs_file_opencfg( &FS_lfs, ( lfs_file_t * )fp, path, LFS_O_RDONLY, &file_cfg );
+#else
+  fres = lfs_file_open( &FS_lfs, ( lfs_file_t * )fp, path, LFS_O_RDONLY );
+#endif
+  if ( fres != LFS_ERR_OK ) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int32_t UVOS_SPIF_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+{
+  // fres = f_read( ( FIL * )fp, buf, bytes_to_read, ( UINT * )bytes_read );
+  // if ( fres != FR_OK ) {
+  //   return -1;
+  // }
+  fres = lfs_file_read( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_read );
+  if ( fres < 0 ) {
+    return -1;
+  }
+  if ( fres != bytes_to_read ) {
+    return -2;
+  }
+
+  *bytes_read = fres;
+  return 0;
+}
+
+int32_t UVOS_SPIF_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
+{
+  return 0;
+}
+
+int32_t UVOS_SPIF_Seek( uintptr_t *fp, uint32_t offset )
+{
+  return 0;
+}
+
+uint32_t UVOS_SPIF_Tell( uintptr_t *fp )
+{
+  return 0;
+}
+
+int32_t UVOS_SPIF_Close( uintptr_t *fp )
+{
+  return 0;
+}
+
+int32_t UVOS_SPIF_Remove( const char *path )
+{
+  return 0;
+}
+
+
 /*--------------------------------------------------------------------------
 
    Private Functions
 
 ---------------------------------------------------------------------------*/
 
-static int block_device_read( const struct lfs_config * c, lfs_block_t block,  lfs_off_t off, void * buffer, lfs_size_t size )
+
+/* Convert UVOS file open enum to LittleFS mode */
+static int UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fopen_mode_t mode )
 {
-  fres = UVOS_Flash_Jedec_ReadData( UVOS_FLASH_SPI_PORT, block * c->block_size + off, buffer, size );
+  if ( mode == FOPEN_MODE_INVALID ) {
+    return -1;
+  }
+
+  // Compare the mode with valid values and return the corresponding enum value
+  if ( mode == FOPEN_MODE_R ) {
+    return ( LITTLEFS_FOPEN_MODE_R ); // POSIX "r"
+  } else if ( mode == FOPEN_MODE_W ) {
+    return ( LITTLEFS_FOPEN_MODE_W );  // POSIX "w"
+  } else if ( mode == FOPEN_MODE_A ) {
+    return ( LITTLEFS_FOPEN_MODE_A );  // POSIX "a"
+  } else if ( mode == FOPEN_MODE_RP ) {
+    return ( LITTLEFS_FOPEN_MODE_RP );  // POSIX "r+"
+  } else if ( mode == FOPEN_MODE_WP ) {
+    return ( LITTLEFS_FOPEN_MODE_WP );  // POSIX "w+"
+  } else if ( mode == FOPEN_MODE_AP ) {
+    return ( LITTLEFS_FOPEN_MODE_AP );  // POSIX "a+"
+  } else if ( mode == FOPEN_MODE_WX ) {
+    return ( LITTLEFS_FOPEN_MODE_WX );  // POSIX "wx"
+  } else if ( mode == FOPEN_MODE_WPX ) {
+    return ( LITTLEFS_FOPEN_MODE_WPX );  // POSIX "w+x"
+  } else {
+    // Mode is invalid
+    return -1;
+  }
+}
+
+/*--------------------------------------------------------------------------
+
+   LittleFS device I/O User Defined Functions (see lfs.h)
+
+---------------------------------------------------------------------------*/
+
+static int block_device_read( const struct lfs_config *c, lfs_block_t block,  lfs_off_t off, void *buffer, lfs_size_t size )
+{
+  fres = UVOS_Flash_Jedec_ReadData( uvos_spif_jedec_id, block * c->block_size + off, buffer, size );
 
   if ( fres ) {
     return LFS_ERR_IO;
@@ -175,9 +338,9 @@ static int block_device_read( const struct lfs_config * c, lfs_block_t block,  l
   return LFS_ERR_OK;
 }
 
-static int block_device_prog( const struct lfs_config * c, lfs_block_t block, lfs_off_t off, const void * buffer, lfs_size_t size )
+static int block_device_prog( const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size )
 {
-  fres = UVOS_Flash_Jedec_WriteData( UVOS_FLASH_SPI_PORT, block * c->block_size + off, ( uint8_t * )buffer, size );
+  fres = UVOS_Flash_Jedec_WriteData( uvos_spif_jedec_id, block * c->block_size + off, ( uint8_t * )buffer, size );
 
   if ( fres ) {
     return LFS_ERR_IO;
@@ -185,9 +348,9 @@ static int block_device_prog( const struct lfs_config * c, lfs_block_t block, lf
   return LFS_ERR_OK;
 }
 
-static int block_device_erase( const struct lfs_config * c, lfs_block_t block )
+static int block_device_erase( const struct lfs_config *c, lfs_block_t block )
 {
-  fres = UVOS_Flash_Jedec_EraseSector( UVOS_FLASH_SPI_PORT, block * c->block_size );
+  fres = UVOS_Flash_Jedec_EraseSector( uvos_spif_jedec_id, block * c->block_size );
 
   if ( fres ) {
     return LFS_ERR_IO;
@@ -195,7 +358,7 @@ static int block_device_erase( const struct lfs_config * c, lfs_block_t block )
   return LFS_ERR_OK;
 }
 
-static int block_device_sync( const struct lfs_config * c )
+static int block_device_sync( const struct lfs_config *c )
 {
   return LFS_ERR_OK;
 }
