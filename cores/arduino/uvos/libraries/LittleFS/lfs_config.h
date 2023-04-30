@@ -19,6 +19,9 @@
 #include "printf.h"
 #endif
 
+// From lfs.h, define our max file name size w/ extension as [8].[3] = 12
+#define LFS_NAME_MAX 12
+
 #ifdef __cplusplus
 extern "C"
 {

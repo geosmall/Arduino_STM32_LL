@@ -5,6 +5,7 @@
 #include <uvos.h>
 
 #include "uw_actuator.h"
+#include "uw_fs_old.h"
 #include "uw_fs.h"
 #include "uw_led.h"
 #include "uw_mpu.h"

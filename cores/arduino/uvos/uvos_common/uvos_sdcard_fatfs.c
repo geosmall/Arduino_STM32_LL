@@ -136,6 +136,25 @@ int32_t UVOS_SDCARD_MountFS( void )
 }
 
 /**
+ * Unmounts the file system
+ * param[in] void
+ * return 0 No errors
+ * return -1 SDCard unmount of FatFs unsuccessful
+ */
+int32_t UVOS_SDCARD_UnmountFS( void )
+{
+  // Open the file system
+  fres = f_unmount( "" );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+
+  /* No errors */
+  sdcard_mounted = false;
+  return 0;
+}
+
+/**
  * Check if the SD card has been mounted
  * @return 0 if no
  * @return 1 if yes

@@ -10,10 +10,15 @@
 #define LFS_LOOKAHEAD_SIZE 512
 // #define PRN_BUFFER_SIZE  128
 
+// LittleFS interface functions
 static int block_device_read( const struct lfs_config *c, lfs_block_t block,  lfs_off_t off, void *buffer, lfs_size_t size );
 static int block_device_prog( const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size );
 static int block_device_erase( const struct lfs_config *c, lfs_block_t block );
 static int block_device_sync( const struct lfs_config *c );
+
+// UVOS to LittleFS file open mode translation
+static LittleFS_fopen_mode_t UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fopen_mode_t mode );
+
 
 // Optional statically allocated read buffer. Must be cache_size.
 // By default lfs_malloc is used to allocate this buffer.
@@ -62,14 +67,10 @@ const struct lfs_config FS_cfg = {
 #define SPIF_MUTEX_GIVE            {}
 #endif
 
-// #define FCLK_SLOW()  { LL_SPI_SetBaudRatePrescaler(SD_SPIx, LL_SPI_BAUDRATEPRESCALER_DIV128); }
-#define FCLK_SLOW() { UVOS_SPI_SetClockSpeed( UVOS_SPIF_SPI, UVOS_SPI_PRESCALER_128 ); }
-// #define FCLK_FAST()  { LL_SPI_SetBaudRatePrescaler(SD_SPIx, LL_SPI_BAUDRATEPRESCALER_DIV8); }
+#define FCLK_SLOW() { UVOS_SPI_SetClockSpeed( UVOS_SPIF_SPI, UVOS_SPI_PRESCALER_64 ); }
 #define FCLK_FAST() { UVOS_SPI_SetClockSpeed( UVOS_SPIF_SPI, UVOS_SPI_PRESCALER_8 ); }
 
-// #define CS_HIGH()      { LL_GPIO_SetOutputPin(SD_CS_GPIO_Port, SD_CS_Pin); }
 #define CS_HIGH() { UVOS_SPI_RC_PinSet( UVOS_SPIF_SPI, 0, 1 ); }/* spi_id, slave_id, pin_value */
-// #define CS_LOW()     { LL_GPIO_ResetOutputPin(SD_CS_GPIO_Port, SD_CS_Pin); }
 #define CS_LOW()  { UVOS_SPI_RC_PinSet( UVOS_SPIF_SPI, 0, 0 ); }/* spi_id, slave_id, pin_value */
 
 #define WAIT_READY_MS 500 /* Time (mSec) to wait for card ready */
@@ -84,7 +85,8 @@ typedef enum {
 static bool spif_mounted = false;
 
 // Variables for LittleFS
-static lfs_t FS_lfs;
+// static lfs_t FS_lfs;
+lfs_t FS_lfs;
 static int fres; //Result after LittleFS operations
 
 // Variables for SPI Flash interface
@@ -166,9 +168,28 @@ int32_t UVOS_SPIF_MountFS( void )
 }
 
 /**
- * Check if the SD card has been mounted
- * @return 0 if no
- * @return 1 if yes
+ * Unmounts the file system
+ * param[in] void
+ * return 0 No errors
+ * return -1 SPI Flash mount of LittleFS unsuccessful
+ */
+int32_t UVOS_SPIF_UnmountFS( void )
+{
+  // Open the file system
+  fres = lfs_unmount( &FS_lfs );
+  if ( fres != LFS_ERR_OK ) {
+    return -1;
+  }
+
+  /* No errors */
+  spif_mounted = false;
+  return 0;
+}
+
+/**
+ * Check if the SPI Flash has been mounted
+ * @return false (0) if no
+ * @return true (non-zero) if yes
  */
 bool UVOS_SPIF_IsMounted( void )
 {
@@ -183,13 +204,14 @@ bool UVOS_SPIF_IsMounted( void )
  */
 int32_t UVOS_SPIF_Format( void )
 {
-  // Format the file system
+  /* Format the file system (clobbers littlefs object, leaves file system mounted) */
   fres = lfs_format( &FS_lfs, &FS_cfg );
   if ( fres != LFS_ERR_OK ) {
     return -1;
   }
 
   /* No errors */
+  spif_mounted = false;
   return 0;
 }
 
@@ -200,7 +222,6 @@ int32_t UVOS_SPIF_Format( void )
 int32_t UVOS_SPIF_GetVolInfo( uvos_fs_vol_info_t *vol_info )
 {
   // Free space (assumes 4Kb/block, for Kb divide by 4096/1024 = 4)
-  // uint32_t total_Kb = ( FS_lfs.cfg->block_count * FS_lfs.cfg->block_size ) / 1024;
   lfs_ssize_t blocks_used = lfs_fs_size( &FS_lfs );
   if ( blocks_used < 0 ) {
     return -1;
@@ -223,16 +244,13 @@ int32_t UVOS_SPIF_GetVolInfo( uvos_fs_vol_info_t *vol_info )
  */
 int32_t UVOS_SPIF_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode )
 {
-  // fres = f_open( ( FIL * )fp, path, ( BYTE )mode );
-  // if ( fres != FR_OK ) {
-  //   return -1;
-  // }
+  LittleFS_fopen_mode_t lfs_flags = UVOS_SDCARD_fopen_mode_str_to_enum( mode );
 
   /* open source file */
 #ifdef LFS_NO_MALLOC
-  fres = lfs_file_opencfg( &FS_lfs, ( lfs_file_t * )fp, path, LFS_O_RDONLY, &file_cfg );
+  fres = lfs_file_opencfg( &FS_lfs, ( lfs_file_t * )fp, path, lfs_flags, &file_cfg );
 #else
-  fres = lfs_file_open( &FS_lfs, ( lfs_file_t * )fp, path, LFS_O_RDONLY );
+  fres = lfs_file_open( &FS_lfs, ( lfs_file_t * )fp, path, lfs_flags );
 #endif
   if ( fres != LFS_ERR_OK ) {
     return -1;
@@ -243,10 +261,6 @@ int32_t UVOS_SPIF_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode 
 
 int32_t UVOS_SPIF_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
-  // fres = f_read( ( FIL * )fp, buf, bytes_to_read, ( UINT * )bytes_read );
-  // if ( fres != FR_OK ) {
-  //   return -1;
-  // }
   fres = lfs_file_read( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_read );
   if ( fres < 0 ) {
     return -1;
@@ -261,29 +275,115 @@ int32_t UVOS_SPIF_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32
 
 int32_t UVOS_SPIF_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
 {
+  lfs_ssize_t lfs_write_res;
+
+  lfs_write_res = lfs_file_write( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_write );
+  if ( lfs_write_res < 0 ) {
+    return -1;
+  }
+  if ( lfs_write_res != bytes_to_write ) {
+    return -2;
+  }
+
+  *bytes_written = lfs_write_res;
   return 0;
 }
 
-int32_t UVOS_SPIF_Seek( uintptr_t *fp, uint32_t offset )
+int32_t UVOS_SPIF_Seek( uintptr_t *fp, int32_t offset )
 {
+  lfs_soff_t lfs_seek_res;
+
+  if ( offset < 0 ) {
+    return -1;
+  }
+  /* Seek offset is from top of file as with FatFS f_lseek */
+  lfs_seek_res = lfs_file_seek( &FS_lfs, ( lfs_file_t * )fp, offset, LFS_SEEK_SET );
+  if ( lfs_seek_res < 0 ) {
+    return -2;
+  }
   return 0;
 }
 
 uint32_t UVOS_SPIF_Tell( uintptr_t *fp )
 {
+  lfs_soff_t lfs_tell_res;
+
+  lfs_tell_res = lfs_file_tell( &FS_lfs, ( lfs_file_t * )fp );
+  if ( lfs_tell_res < 0 ) {
+    return -1;
+  }
+
   return 0;
 }
 
 int32_t UVOS_SPIF_Close( uintptr_t *fp )
 {
+  fres = lfs_file_close( &FS_lfs, ( lfs_file_t * )fp );
+  if ( fres < 0 ) {
+    return -1;
+  }
   return 0;
 }
 
 int32_t UVOS_SPIF_Remove( const char *path )
 {
+  // If removing a directory, directory must be empty.
+  // Returns a negative error code on failure.
+  fres = lfs_remove( &FS_lfs, path );
+  if ( fres < 0 ) {
+    return -1;
+  }
   return 0;
 }
 
+int32_t UVOS_SPIF_Dir_Open( uintptr_t *dp, const char *path )
+{
+  fres = lfs_dir_open( &FS_lfs, ( lfs_dir_t * )dp, path );
+  if ( fres < 0 ) {
+    return -1;
+  }
+  return 0;
+}
+
+int32_t UVOS_SPIF_Dir_Close( uintptr_t *dp )
+{
+  fres = lfs_dir_close( &FS_lfs, ( lfs_dir_t * )dp );
+  if ( fres < 0 ) {
+    return -1;
+  }
+  return 0;
+}
+
+/* Read an entry in the dir info structure, based on the specified file or directory.
+   Returns a positive value on success, 0 at the end of directory,
+   or a negative error code on failure. */
+int32_t UVOS_SPIF_Dir_Read( uintptr_t *dp, uvos_file_info_t *file_info )
+{
+  struct lfs_info finfo;
+
+  fres = lfs_dir_read( &FS_lfs, ( lfs_dir_t * )dp, &finfo );
+  if ( fres < 0 ) {
+    return -1;
+  }
+
+  if ( finfo.type == LFS_TYPE_DIR ) {
+    file_info->is_dir = true;
+  } else {
+    file_info->is_dir = false;
+  }
+
+  file_info->size = finfo.size;
+
+  // Copy and null terminate dir/file name with strncpy(dst, src, num);
+  strncpy( file_info->name, finfo.name, UVOS_FILE_NAME_Z );
+  file_info->name[UVOS_FILE_NAME_Z - 1] = '\0';
+
+  if (fres > 0) {
+    return true; // success
+  } else {
+    return 0; // end of directory
+  }
+}
 
 /*--------------------------------------------------------------------------
 
@@ -293,33 +393,36 @@ int32_t UVOS_SPIF_Remove( const char *path )
 
 
 /* Convert UVOS file open enum to LittleFS mode */
-static int UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fopen_mode_t mode )
+static inline LittleFS_fopen_mode_t UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fopen_mode_t mode )
 {
+  LittleFS_fopen_mode_t ret_val;
+
   if ( mode == FOPEN_MODE_INVALID ) {
-    return -1;
+    return LFS_FOPEN_MODE_INVALID;
   }
 
   // Compare the mode with valid values and return the corresponding enum value
   if ( mode == FOPEN_MODE_R ) {
-    return ( LITTLEFS_FOPEN_MODE_R ); // POSIX "r"
+    ret_val = LFS_FOPEN_MODE_R; // POSIX "r"
   } else if ( mode == FOPEN_MODE_W ) {
-    return ( LITTLEFS_FOPEN_MODE_W );  // POSIX "w"
+    ret_val = LFS_FOPEN_MODE_W;  // POSIX "w"
   } else if ( mode == FOPEN_MODE_A ) {
-    return ( LITTLEFS_FOPEN_MODE_A );  // POSIX "a"
+    ret_val = LFS_FOPEN_MODE_A;  // POSIX "a"
   } else if ( mode == FOPEN_MODE_RP ) {
-    return ( LITTLEFS_FOPEN_MODE_RP );  // POSIX "r+"
+    ret_val = LFS_FOPEN_MODE_RP;  // POSIX "r+"
   } else if ( mode == FOPEN_MODE_WP ) {
-    return ( LITTLEFS_FOPEN_MODE_WP );  // POSIX "w+"
+    ret_val = LFS_FOPEN_MODE_WP;  // POSIX "w+"
   } else if ( mode == FOPEN_MODE_AP ) {
-    return ( LITTLEFS_FOPEN_MODE_AP );  // POSIX "a+"
+    ret_val = LFS_FOPEN_MODE_AP;  // POSIX "a+"
   } else if ( mode == FOPEN_MODE_WX ) {
-    return ( LITTLEFS_FOPEN_MODE_WX );  // POSIX "wx"
+    ret_val = LFS_FOPEN_MODE_WX;  // POSIX "wx"
   } else if ( mode == FOPEN_MODE_WPX ) {
-    return ( LITTLEFS_FOPEN_MODE_WPX );  // POSIX "w+x"
+    ret_val = LFS_FOPEN_MODE_WPX;  // POSIX "w+x"
   } else {
-    // Mode is invalid
-    return -1;
+    ret_val = LFS_FOPEN_MODE_INVALID;  // Mode is invalid
   }
+
+  return ret_val;
 }
 
 /*--------------------------------------------------------------------------

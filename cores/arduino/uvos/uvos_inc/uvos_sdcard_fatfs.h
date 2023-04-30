@@ -16,6 +16,7 @@ typedef struct {
 /* Prototypes */
 extern int32_t UVOS_SDCARD_Init( uint32_t spi_id );
 extern int32_t UVOS_SDCARD_MountFS( void );
+extern int32_t UVOS_SDCARD_UnmountFS( void );
 extern bool UVOS_SDCARD_IsMounted( void );
 extern int32_t UVOS_SDCARD_GetVolInfo( uvos_fs_vol_info_t *vol_info );
 
