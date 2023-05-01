@@ -18,7 +18,6 @@ int UAVWare_init( void )
 #endif // UVOS_INCLUDE_DEBUG_CONSOLE
   }
 
-  UW_fs_old_init();
   UW_fs_init();
   UW_act_init();
 

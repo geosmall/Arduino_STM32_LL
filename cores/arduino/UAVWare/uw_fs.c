@@ -1,7 +1,6 @@
 // #include <UAVWare.h>
 #include <uvos.h>
 #include "uw_fs.h"
-#include "uw_fs_old.h"
 
 static uvos_fs_type_t UW_fs_type = FS_TYPE_INVALID;
 static uvos_fs_type_t UW_fs_file;
@@ -142,49 +141,6 @@ int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize )
 	return FS_ERR_OK;
 }
 
-#if 0
-
-#include "uw_fs_old.h"
-#define LFS_PAGE_SIZE 256
-
-int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize )
-{
-	lfs_file_t file;
-	int result;
-
-#ifdef LFS_NO_MALLOC
-	static uint8_t file_buffer[ LFS_PAGE_SIZE ];
-	static struct lfs_file_config file_cfg = {
-		.buffer = file_buffer
-	};
-#endif
-
-	/* Delete existing file */
-	UW_fs_old_remove_file( filePath );
-
-	/* Open file for writing, create if necessary */
-#ifdef LFS_NO_MALLOC
-	result = lfs_file_opencfg( &FS_lfs, &file, filePath, LFS_O_WRONLY | LFS_O_CREAT, &file_cfg );
-#else
-	result = lfs_file_open( &FS_lfs, &file, filePath, LFS_O_WRONLY | LFS_O_CREAT );
-#endif
-	if ( result < 0 ) {
-		return FS_ERR_FAILED;
-	}
-
-	/* Write supplied buffer to opened file */
-	if ( lfs_file_write( &FS_lfs, &file, buf, bufSize ) < 0 ) {
-		lfs_file_close( &FS_lfs, &file );
-		return FS_ERR_FAILED;
-	}
-
-	/* Clean up and exit */
-	lfs_file_close( &FS_lfs, &file );
-	return FS_ERR_FAILED;
-}
-
-#else // GLS
-
 int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize )
 {
 	uvos_fs_file_t file;
@@ -209,8 +165,6 @@ int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize 
 	fs_driver->file_close( ( uintptr_t * )&file );
 	return FS_ERR_OK;
 }
-
-#endif // GLS
 
 // Open a file in a given mode per uvos_fopen_mode_t
 // Returns 0 if file open is successful, -1 if unsuccessful
