@@ -85,8 +85,7 @@ typedef enum {
 static bool spif_mounted = false;
 
 // Variables for LittleFS
-// static lfs_t FS_lfs;
-lfs_t FS_lfs;
+static lfs_t FS_lfs;
 static int fres; //Result after LittleFS operations
 
 // Variables for SPI Flash interface
@@ -242,7 +241,7 @@ int32_t UVOS_SPIF_GetVolInfo( uvos_fs_vol_info_t *vol_info )
  * param[in] mode Flags that specifies the type of access and open method for the file
  * return 0 if file open is successful, -1 if unsuccessful
  */
-int32_t UVOS_SPIF_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode )
+int32_t UVOS_SPIF_File_Open( uvos_fs_file_t *fp, const char *path, uvos_fopen_mode_t mode )
 {
   LittleFS_fopen_mode_t lfs_flags = UVOS_SDCARD_fopen_mode_str_to_enum( mode );
 
@@ -259,7 +258,7 @@ int32_t UVOS_SPIF_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode 
   return 0;
 }
 
-int32_t UVOS_SPIF_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+int32_t UVOS_SPIF_File_Read( uvos_fs_file_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
   fres = lfs_file_read( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_read );
   if ( fres < 0 ) {
@@ -273,7 +272,7 @@ int32_t UVOS_SPIF_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32
   return 0;
 }
 
-int32_t UVOS_SPIF_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
+int32_t UVOS_SPIF_File_Write( uvos_fs_file_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
 {
   lfs_ssize_t lfs_write_res;
 
@@ -289,7 +288,7 @@ int32_t UVOS_SPIF_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_write
   return 0;
 }
 
-int32_t UVOS_SPIF_Seek( uintptr_t *fp, int32_t offset )
+int32_t UVOS_SPIF_File_Seek( uvos_fs_file_t *fp, int32_t offset )
 {
   lfs_soff_t lfs_seek_res;
 
@@ -304,7 +303,7 @@ int32_t UVOS_SPIF_Seek( uintptr_t *fp, int32_t offset )
   return 0;
 }
 
-uint32_t UVOS_SPIF_Tell( uintptr_t *fp )
+uint32_t UVOS_SPIF_File_Tell( uvos_fs_file_t *fp )
 {
   lfs_soff_t lfs_tell_res;
 
@@ -316,7 +315,7 @@ uint32_t UVOS_SPIF_Tell( uintptr_t *fp )
   return 0;
 }
 
-int32_t UVOS_SPIF_Close( uintptr_t *fp )
+int32_t UVOS_SPIF_File_Close( uvos_fs_file_t *fp )
 {
   fres = lfs_file_close( &FS_lfs, ( lfs_file_t * )fp );
   if ( fres < 0 ) {
@@ -325,7 +324,7 @@ int32_t UVOS_SPIF_Close( uintptr_t *fp )
   return 0;
 }
 
-int32_t UVOS_SPIF_Remove( const char *path )
+int32_t UVOS_SPIF_File_Remove( const char *path )
 {
   // If removing a directory, directory must be empty.
   // Returns a negative error code on failure.

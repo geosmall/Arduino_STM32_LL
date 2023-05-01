@@ -3,10 +3,10 @@
 #include "uw_fs.h"
 
 static uvos_fs_type_t UW_fs_type = FS_TYPE_INVALID;
-static uvos_fs_type_t UW_fs_file;
+// static uvos_fs_type_t UW_fs_file;
 static int fres;
 
-extern lfs_t FS_lfs;
+// extern lfs_t FS_lfs;
 
 /* Provide a flash file system drivers, for either
 	 FatFS based SD Card or LittleFS based serial flash */
@@ -16,13 +16,13 @@ static const struct uvos_fs_driver_t uw_fs_driver = {
 	.unmount_fs = UVOS_SPIF_UnmountFS,
 	.is_mounted = UVOS_SPIF_IsMounted,
 	.get_vol_info = UVOS_SPIF_GetVolInfo,
-	.file_open = UVOS_SPIF_Open,
-	.file_read = UVOS_SPIF_Read,
-	.file_write = UVOS_SPIF_Write,
-	.file_seek = UVOS_SPIF_Seek,
-	.file_tell = UVOS_SPIF_Tell,
-	.file_close = UVOS_SPIF_Close,
-	.file_remove = UVOS_SPIF_Remove,
+	.file_open = UVOS_SPIF_File_Open,
+	.file_read = UVOS_SPIF_File_Read,
+	.file_write = UVOS_SPIF_File_Write,
+	.file_seek = UVOS_SPIF_File_Seek,
+	.file_tell = UVOS_SPIF_File_Tell,
+	.file_close = UVOS_SPIF_File_Close,
+	.file_remove = UVOS_SPIF_File_Remove,
 	.dir_open = UVOS_SPIF_Dir_Open,
 	.dir_close = UVOS_SPIF_Dir_Close,
 	.dir_read = UVOS_SPIF_Dir_Read,
@@ -117,7 +117,7 @@ int UW_fs_get_vol_info( UW_fs_vol_info_t *UW_vol_info )
 int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize )
 {
 	uvos_fs_file_t fsrc;
-	uintptr_t *fp = ( uintptr_t * )&fsrc;
+	uvos_fs_file_t *fp = &fsrc;
 	int result;
 	uint32_t bytes_read;
 
@@ -144,25 +144,25 @@ int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize )
 int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize )
 {
 	uvos_fs_file_t file;
-	// uintptr_t *fp = ( uintptr_t * )&file;
+	uvos_fs_file_t *fp = &file;
 	int result;
 	uint32_t bytes_written;
 
 	/* Open file for writing, create if necessary */
-	result = fs_driver->file_open( ( uintptr_t * )&file, filePath, FOPEN_MODE_W );
+	result = fs_driver->file_open( fp, filePath, FOPEN_MODE_W );
 	if ( result < 0 ) {
 		return FS_ERR_FAILED;
 	}
 
 	/* Write supplied buffer to opened file */
-	result = fs_driver->file_write( ( uintptr_t * )&file, buf, bufSize, &bytes_written );
+	result = fs_driver->file_write( fp, buf, bufSize, &bytes_written );
 	if ( result < 0 ) {
-		fs_driver->file_close( ( uintptr_t * )&file );
+		fs_driver->file_close( fp );
 		return FS_ERR_FAILED;
 	}
 
 	/* Clean up and exit */
-	fs_driver->file_close( ( uintptr_t * )&file );
+	fs_driver->file_close( fp );
 	return FS_ERR_OK;
 }
 
@@ -179,7 +179,7 @@ int UW_fs_file_open( UW_fs_file_t *file, const char *path, uvos_fopen_mode_t mod
 	/* Assign mounted FS tpe to file handle passed to us */
 	file->type = UW_fs_type;
 
-	fres = fs_driver->file_open( ( uintptr_t * )file, path, mode );
+	fres = fs_driver->file_open( file, path, mode );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}
@@ -196,7 +196,7 @@ int UW_fs_file_read( UW_fs_file_t *file, void *buf, uint32_t bytes_to_read, uint
 		return FS_ERR_NOT_VALID;
 	}
 
-	fres = fs_driver->file_read( ( uintptr_t * )file, buf, bytes_to_read, bytes_read );
+	fres = fs_driver->file_read( file, buf, bytes_to_read, bytes_read );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}
@@ -213,7 +213,7 @@ int UW_fs_file_write( UW_fs_file_t *file, const void *buf, uint32_t bytes_to_wri
 		return FS_ERR_NOT_VALID;
 	}
 
-	fres = fs_driver->file_write( ( uintptr_t * )file, buf, bytes_to_write, bytes_written );
+	fres = fs_driver->file_write( file, buf, bytes_to_write, bytes_written );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}
@@ -234,7 +234,7 @@ int UW_fs_file_seek( UW_fs_file_t *file, int32_t offset )
 		return FS_ERR_NOT_VALID;
 	}
 
-	fres = fs_driver->file_seek( ( uintptr_t * )file, offset );
+	fres = fs_driver->file_seek( file, offset );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}
@@ -246,7 +246,7 @@ int UW_fs_file_seek( UW_fs_file_t *file, int32_t offset )
 // Returns current read/write pointer of the file
 uint32_t UW_fs_file_tell( UW_fs_file_t *file )
 {
-	return fs_driver->file_tell( ( uintptr_t * )file );
+	return fs_driver->file_tell( file );
 }
 
 // Close a file
@@ -258,7 +258,7 @@ int UW_fs_file_close( UW_fs_file_t *file )
 		return FS_ERR_NOT_VALID;
 	}
 
-	fres = fs_driver->file_close( ( uintptr_t * )file );
+	fres = fs_driver->file_close( file );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}

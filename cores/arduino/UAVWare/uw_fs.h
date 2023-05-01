@@ -82,7 +82,12 @@ uvos_fs_file_t typedef UW_fs_file_t;
 uvos_fs_dir_t typedef UW_fs_dir_t;
 uvos_file_info_t typedef UW_fs_file_info_t;
 
+// Reads in a file from file system into provided buffer
+// Returns 0 on success, or -1 on failure
 extern int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize );
+
+// Writrs a file to file system from provided buffer
+// Returns 0 on success, or -1 on failure
 extern int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize );
 
 // Initialize and mount a logical file system

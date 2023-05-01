@@ -108,12 +108,12 @@ struct uvos_fs_driver_t {
   int32_t ( *unmount_fs )( void );
   bool ( *is_mounted )( void );
   int32_t ( *get_vol_info )( uvos_fs_vol_info_t *vol_info );
-  int32_t ( *file_open )( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode );
-  int32_t ( *file_read )( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
-  int32_t ( *file_write )( uintptr_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-  int32_t ( *file_seek )( uintptr_t *fp, int32_t offset );
-  uint32_t ( *file_tell )( uintptr_t *fp );
-  int32_t ( *file_close )( uintptr_t *fp );
+  int32_t ( *file_open )( uvos_fs_file_t *fp, const char *path, uvos_fopen_mode_t mode );
+  int32_t ( *file_read )( uvos_fs_file_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
+  int32_t ( *file_write )( uvos_fs_file_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
+  int32_t ( *file_seek )( uvos_fs_file_t *fp, int32_t offset );
+  uint32_t ( *file_tell )( uvos_fs_file_t *fp );
+  int32_t ( *file_close )( uvos_fs_file_t *fp );
   int32_t ( *file_remove )( const char *path );
   int32_t ( *dir_open )( uintptr_t *dp, const char *path );
   int32_t ( *dir_close )( uintptr_t *dp );
