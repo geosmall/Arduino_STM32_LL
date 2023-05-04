@@ -29,8 +29,8 @@ extern uint32_t UVOS_SPIF_File_Tell( uvos_fs_file_t *fp );
 extern int32_t UVOS_SPIF_File_Close( uvos_fs_file_t *fp );
 extern int32_t UVOS_SPIF_File_Remove( const char *path );
 
-extern int32_t UVOS_SPIF_Dir_Open( uintptr_t *dp, const char *path );
-extern int32_t UVOS_SPIF_Dir_Close( uintptr_t *dp );
-extern int32_t UVOS_SPIF_Dir_Read( uintptr_t *dp, uvos_file_info_t *file_info );
+extern int32_t UVOS_SPIF_Dir_Open( uvos_fs_dir_t *dp, const char *path );
+extern int32_t UVOS_SPIF_Dir_Close( uvos_fs_dir_t *dp );
+extern int32_t UVOS_SPIF_Dir_Read( uvos_fs_dir_t *dp, uvos_file_info_t *file_info );
 
 #endif /* UVOS_SPIF_H */

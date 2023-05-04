@@ -126,7 +126,7 @@ int32_t UVOS_SDCARD_MountFS( void )
   // Open the file system
   fres = f_mount( &FatFs, "", 1 ); // 1=mount now
   if ( fres != FR_OK ) {
-    spif_mounted = false;
+    sdcard_mounted = false;
     return -1;
   }
 
@@ -203,7 +203,7 @@ int32_t UVOS_SDCARD_GetVolInfo( uvos_fs_vol_info_t *vol_info )
  * param[in] mode Flags that specifies the type of access and open method for the file
  * return 0 if file open is successful, -1 if unsuccessful
  */
-int32_t UVOS_SDCARD_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mode )
+int32_t UVOS_SDCARD_File_Open( uvos_fs_file_t *fp, const char *path, uvos_fopen_mode_t mode )
 {
   fres = f_open( ( FIL * )fp, path, ( BYTE )UVOS_SDCARD_fopen_mode_str_to_enum( mode ) );
   if ( fres != FR_OK ) {
@@ -212,8 +212,7 @@ int32_t UVOS_SDCARD_Open( uintptr_t *fp, const char *path, uvos_fopen_mode_t mod
   return 0;
 }
 
-// int32_t UVOS_SDCARD_Read( FIL *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
-int32_t UVOS_SDCARD_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+int32_t UVOS_SDCARD_File_Read( uvos_fs_file_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
   fres = f_read( ( FIL * )fp, buf, bytes_to_read, ( UINT * )bytes_read );
   if ( fres != FR_OK ) {
@@ -222,7 +221,7 @@ int32_t UVOS_SDCARD_Read( uintptr_t *fp, void *buf, uint32_t bytes_to_read, uint
   return 0;
 }
 
-int32_t UVOS_SDCARD_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
+int32_t UVOS_SDCARD_File_Write( uvos_fs_file_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
 {
   fres = f_write( ( FIL * )fp, buf, bytes_to_write, ( UINT * )bytes_written );
   if ( fres != FR_OK ) {
@@ -231,7 +230,7 @@ int32_t UVOS_SDCARD_Write( uintptr_t *fp, const void *buf, uint32_t bytes_to_wri
   return 0;
 }
 
-int32_t UVOS_SDCARD_Seek( uintptr_t *fp, uint32_t offset )
+int32_t UVOS_SDCARD_File_Seek( uvos_fs_file_t *fp, int32_t offset )
 {
   fres = f_lseek( ( FIL * )fp, offset );
   if ( fres != FR_OK ) {
@@ -240,12 +239,12 @@ int32_t UVOS_SDCARD_Seek( uintptr_t *fp, uint32_t offset )
   return 0;
 }
 
-uint32_t UVOS_SDCARD_Tell( uintptr_t *fp )
+uint32_t UVOS_SDCARD_File_Tell( uvos_fs_file_t *fp )
 {
   return ( uint32_t )f_tell( ( FIL * )fp );
 }
 
-int32_t UVOS_SDCARD_Close( uintptr_t *fp )
+int32_t UVOS_SDCARD_File_Close( uvos_fs_file_t *fp )
 {
   fres = f_close( ( FIL * )fp );
   if ( fres != FR_OK ) {
@@ -254,13 +253,62 @@ int32_t UVOS_SDCARD_Close( uintptr_t *fp )
   return 0;
 }
 
-int32_t UVOS_SDCARD_Remove( const char *path )
+int32_t UVOS_SDCARD_File_Remove( const char *path )
 {
   fres = f_unlink( path );
   if ( fres != FR_OK ) {
     return -1;
   }
   return 0;
+}
+
+int32_t UVOS_SDCARD_Dir_Open( uvos_fs_dir_t *dp, const char *path )
+{
+  fres = f_opendir( ( DIR * )dp, path );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+int32_t UVOS_SDCARD_Dir_Close( uvos_fs_dir_t *dp )
+{
+  fres = f_closedir( ( DIR * )dp );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+  return 0;
+}
+
+/* Read an entry in the dir info structure, based on the specified file or directory.
+   Returns a positive value on success, 0 at the end of directory,
+   or a negative error code on failure. */
+int32_t UVOS_SDCARD_Dir_Read( uvos_fs_dir_t *dp, uvos_file_info_t *file_info )
+{
+  FILINFO finfo;
+
+  fres = f_readdir( ( DIR * )dp, &finfo );
+  if ( fres != FR_OK ) {
+    return -1;
+  }
+
+  if ( finfo.fattrib & AM_DIR ) {
+    file_info->is_dir = true;
+  } else {
+    file_info->is_dir = false;
+  }
+
+  file_info->size = finfo.fsize;
+
+  // Copy and null terminate dir/file name with strncpy(dst, src, num);
+  strncpy( file_info->name, finfo.fname, UVOS_FILE_NAME_Z );
+  file_info->name[UVOS_FILE_NAME_Z - 1] = '\0';
+
+  if ( finfo.fname[0] != '\0' ) {
+    return true; // success
+  } else {
+    return 0; // fname is NULL, end of directory
+  }
 }
 
 /*--------------------------------------------------------------------------

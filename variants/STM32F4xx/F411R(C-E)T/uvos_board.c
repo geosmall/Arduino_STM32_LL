@@ -192,6 +192,13 @@ int32_t UVOS_Board_Init( void )
   UVOS_LED_Init( led_cfg );
 #endif /* UVOS_INCLUDE_LED */
 
+#if defined( UVOS_INCLUDE_DEBUG_CONSOLE )
+  UVOS_Board_configure_com( &uvos_usart_flexi_cfg,
+                            UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
+                            UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
+                            &uvos_usart_com_driver, &uvos_com_debug_id );
+#endif
+
   /* Set up the SPI interface to the gyro/acelerometer */
   if ( UVOS_SPI_Init( &uvos_spi_gyro_id, &uvos_spi_gyro_cfg ) ) {
     return -1;
@@ -249,13 +256,6 @@ int32_t UVOS_Board_Init( void )
 
   /* Set up scheduler timer */
   UVOS_TIM_InitClock( &tim_11_cfg );
-
-#if defined( UVOS_INCLUDE_DEBUG_CONSOLE )
-  UVOS_Board_configure_com( &uvos_usart_flexi_cfg,
-                            UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
-                            UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
-                            &uvos_usart_com_driver, &uvos_com_debug_id );
-#endif
 
 #if defined( UVOS_INCLUDE_IBUS )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );

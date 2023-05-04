@@ -3,10 +3,7 @@
 #include "uw_fs.h"
 
 static uvos_fs_type_t UW_fs_type = FS_TYPE_INVALID;
-// static uvos_fs_type_t UW_fs_file;
 static int fres;
-
-// extern lfs_t FS_lfs;
 
 /* Provide a flash file system drivers, for either
 	 FatFS based SD Card or LittleFS based serial flash */
@@ -31,16 +28,16 @@ static const struct uvos_fs_driver_t uw_fs_driver = {
 	.unmount_fs = UVOS_SDCARD_UnmountFS,
 	.is_mounted = UVOS_SDCARD_IsMounted,
 	.get_vol_info = UVOS_SDCARD_GetVolInfo,
-	.file_open = UVOS_SDCARD_Open,
-	.file_read = UVOS_SDCARD_Read,
-	.file_write = UVOS_SDCARD_Write,
-	.file_seek = UVOS_SDCARD_Seek,
-	.file_tell = UVOS_SDCARD_Tell,
-	.file_close = UVOS_SDCARD_Close,
-	.file_remove = UVOS_SDCARD_Remove,
-	// .dir_open = UVOS_SDCARD_Open,
-	// .dir_close = UVOS_SDCARD_Close,
-	// .dir_read = UVOS_SDCARD_Read,
+	.file_open = UVOS_SDCARD_File_Open,
+	.file_read = UVOS_SDCARD_File_Read,
+	.file_write = UVOS_SDCARD_File_Write,
+	.file_seek = UVOS_SDCARD_File_Seek,
+	.file_tell = UVOS_SDCARD_File_Tell,
+	.file_close = UVOS_SDCARD_File_Close,
+	.file_remove = UVOS_SDCARD_File_Remove,
+	.dir_open = UVOS_SDCARD_Dir_Open,
+	.dir_close = UVOS_SDCARD_Dir_Close,
+	.dir_read = UVOS_SDCARD_Dir_Read,
 #else
 #error No SPI based storage defined
 #endif // defined( UVOS_INCLUDE_FLASH )
@@ -105,13 +102,13 @@ int UW_fs_get_vol_info( UW_fs_vol_info_t *UW_vol_info )
 
 	fres = fs_driver->get_vol_info( &vol_info );
 	if ( fres ) {
-		return -2;
+		return FS_ERR_FAILED;
 	}
 	UW_vol_info->vol_total_Kbytes = vol_info.vol_total_Kbytes;
 	UW_vol_info->vol_free_Kbytes = vol_info.vol_free_Kbytes;
 	UW_vol_info->type = vol_info.type;
 
-	return 0;
+	return FS_ERR_OK;
 }
 
 int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize )
@@ -292,7 +289,7 @@ int UW_fs_dir_open( UW_fs_dir_t *dir, const char *path )
 		return FS_ERR_NOT_VALID;
 	}
 
-	fres = fs_driver->dir_open( ( uintptr_t * )dir, path );
+	fres = fs_driver->dir_open( dir, path );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}
@@ -309,7 +306,7 @@ int UW_fs_dir_close( UW_fs_dir_t *dir )
 		return FS_ERR_NOT_VALID;
 	}
 
-	fres = fs_driver->dir_close( ( uintptr_t * )dir );
+	fres = fs_driver->dir_close( dir );
 	if ( fres ) {
 		return FS_ERR_FAILED;
 	}
@@ -327,7 +324,7 @@ int UW_fs_dir_read( UW_fs_dir_t *dir, UW_fs_file_info_t *dir_info )
 	}
 
 	/* fres = positive value on success, 0 at the end of directory, or a negative error code on failure. */
-	fres = fs_driver->dir_read( ( uintptr_t * )dir, ( uvos_file_info_t * )dir_info );
+	fres = fs_driver->dir_read( dir, ( uvos_file_info_t * )dir_info );
 	if ( fres == 0 ) {
 		return 0; // end of directory
 	} else if ( fres > 0 ) {

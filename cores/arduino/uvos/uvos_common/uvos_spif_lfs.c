@@ -335,7 +335,7 @@ int32_t UVOS_SPIF_File_Remove( const char *path )
   return 0;
 }
 
-int32_t UVOS_SPIF_Dir_Open( uintptr_t *dp, const char *path )
+int32_t UVOS_SPIF_Dir_Open( uvos_fs_dir_t *dp, const char *path )
 {
   fres = lfs_dir_open( &FS_lfs, ( lfs_dir_t * )dp, path );
   if ( fres < 0 ) {
@@ -344,7 +344,7 @@ int32_t UVOS_SPIF_Dir_Open( uintptr_t *dp, const char *path )
   return 0;
 }
 
-int32_t UVOS_SPIF_Dir_Close( uintptr_t *dp )
+int32_t UVOS_SPIF_Dir_Close( uvos_fs_dir_t *dp )
 {
   fres = lfs_dir_close( &FS_lfs, ( lfs_dir_t * )dp );
   if ( fres < 0 ) {
@@ -356,7 +356,7 @@ int32_t UVOS_SPIF_Dir_Close( uintptr_t *dp )
 /* Read an entry in the dir info structure, based on the specified file or directory.
    Returns a positive value on success, 0 at the end of directory,
    or a negative error code on failure. */
-int32_t UVOS_SPIF_Dir_Read( uintptr_t *dp, uvos_file_info_t *file_info )
+int32_t UVOS_SPIF_Dir_Read( uvos_fs_dir_t *dp, uvos_file_info_t *file_info )
 {
   struct lfs_info finfo;
 

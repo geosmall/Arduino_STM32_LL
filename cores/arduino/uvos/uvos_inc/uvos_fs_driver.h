@@ -115,9 +115,9 @@ struct uvos_fs_driver_t {
   uint32_t ( *file_tell )( uvos_fs_file_t *fp );
   int32_t ( *file_close )( uvos_fs_file_t *fp );
   int32_t ( *file_remove )( const char *path );
-  int32_t ( *dir_open )( uintptr_t *dp, const char *path );
-  int32_t ( *dir_close )( uintptr_t *dp );
-  int32_t ( *dir_read )( uintptr_t *dp, uvos_file_info_t *file_info );
+  int32_t ( *dir_open )( uvos_fs_dir_t *dp, const char *path );
+  int32_t ( *dir_close )( uvos_fs_dir_t *dp );
+  int32_t ( *dir_read )( uvos_fs_dir_t *dp, uvos_file_info_t *file_info );
 };
 
 #ifdef __cplusplus
