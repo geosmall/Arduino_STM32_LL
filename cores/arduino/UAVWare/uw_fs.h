@@ -78,9 +78,9 @@ typedef enum {
   FS_ERR_RANGE                     =  -5, /*!< Request out of range */
 } fs_error_t;
 
-uvos_fs_file_t typedef UW_fs_file_t;
-uvos_fs_dir_t typedef UW_fs_dir_t;
-uvos_file_info_t typedef UW_fs_file_info_t;
+struct uvos_fs_file typedef UW_fs_file_t;
+struct uvos_fs_dir typedef UW_fs_dir_t;
+struct uvos_file_info typedef UW_fs_file_info_t;
 
 // Reads in a file from file system into provided buffer
 // Returns 0 on success, or -1 on failure

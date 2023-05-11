@@ -237,7 +237,7 @@ int32_t UVOS_SPIF_Format( void )
  * Checks that file system is mounted, fills in SPIF vol_info
  * return 0 if successful, -1 if unsuccessful
  */
-int32_t UVOS_SPIF_GetVolInfo( uvos_fs_vol_info_t *vol_info )
+int32_t UVOS_SPIF_GetVolInfo( struct uvos_fs_vol_info *vol_info )
 {
   // Free space (assumes 4Kb/block, for Kb divide by 4096/1024 = 4)
   lfs_ssize_t blocks_used = lfs_fs_size( &FS_lfs );
@@ -260,7 +260,7 @@ int32_t UVOS_SPIF_GetVolInfo( uvos_fs_vol_info_t *vol_info )
  * param[in] mode Flags that specifies the type of access and open method for the file
  * return 0 if file open is successful, -1 if unsuccessful
  */
-int32_t UVOS_SPIF_File_Open( uvos_fs_file_t *fp, const char *path, uvos_fopen_mode_t mode )
+int32_t UVOS_SPIF_File_Open( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode )
 {
   LittleFS_fopen_mode_t lfs_flags = UVOS_SDCARD_fopen_mode_str_to_enum( mode );
 
@@ -277,7 +277,7 @@ int32_t UVOS_SPIF_File_Open( uvos_fs_file_t *fp, const char *path, uvos_fopen_mo
   return 0;
 }
 
-int32_t UVOS_SPIF_File_Read( uvos_fs_file_t *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
+int32_t UVOS_SPIF_File_Read( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
   fres = lfs_file_read( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_read );
   if ( fres < 0 ) {
@@ -291,7 +291,7 @@ int32_t UVOS_SPIF_File_Read( uvos_fs_file_t *fp, void *buf, uint32_t bytes_to_re
   return 0;
 }
 
-int32_t UVOS_SPIF_File_Write( uvos_fs_file_t *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
+int32_t UVOS_SPIF_File_Write( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
 {
   lfs_ssize_t lfs_write_res;
 
@@ -307,7 +307,7 @@ int32_t UVOS_SPIF_File_Write( uvos_fs_file_t *fp, const void *buf, uint32_t byte
   return 0;
 }
 
-int32_t UVOS_SPIF_File_Seek( uvos_fs_file_t *fp, int32_t offset )
+int32_t UVOS_SPIF_File_Seek( struct uvos_fs_file *fp, int32_t offset )
 {
   lfs_soff_t lfs_seek_res;
 
@@ -322,7 +322,7 @@ int32_t UVOS_SPIF_File_Seek( uvos_fs_file_t *fp, int32_t offset )
   return 0;
 }
 
-uint32_t UVOS_SPIF_File_Tell( uvos_fs_file_t *fp )
+uint32_t UVOS_SPIF_File_Tell( struct uvos_fs_file *fp )
 {
   lfs_soff_t lfs_tell_res;
 
@@ -334,7 +334,7 @@ uint32_t UVOS_SPIF_File_Tell( uvos_fs_file_t *fp )
   return 0;
 }
 
-int32_t UVOS_SPIF_File_Close( uvos_fs_file_t *fp )
+int32_t UVOS_SPIF_File_Close( struct uvos_fs_file *fp )
 {
   fres = lfs_file_close( &FS_lfs, ( lfs_file_t * )fp );
   if ( fres < 0 ) {
@@ -354,7 +354,7 @@ int32_t UVOS_SPIF_File_Remove( const char *path )
   return 0;
 }
 
-int32_t UVOS_SPIF_Dir_Open( uvos_fs_dir_t *dp, const char *path )
+int32_t UVOS_SPIF_Dir_Open( struct uvos_fs_dir *dp, const char *path )
 {
   fres = lfs_dir_open( &FS_lfs, ( lfs_dir_t * )dp, path );
   if ( fres < 0 ) {
@@ -363,7 +363,7 @@ int32_t UVOS_SPIF_Dir_Open( uvos_fs_dir_t *dp, const char *path )
   return 0;
 }
 
-int32_t UVOS_SPIF_Dir_Close( uvos_fs_dir_t *dp )
+int32_t UVOS_SPIF_Dir_Close( struct uvos_fs_dir *dp )
 {
   fres = lfs_dir_close( &FS_lfs, ( lfs_dir_t * )dp );
   if ( fres < 0 ) {
@@ -375,7 +375,7 @@ int32_t UVOS_SPIF_Dir_Close( uvos_fs_dir_t *dp )
 /* Read an entry in the dir info structure, based on the specified file or directory.
    Returns a positive value on success, 0 at the end of directory,
    or a negative error code on failure. */
-int32_t UVOS_SPIF_Dir_Read( uvos_fs_dir_t *dp, uvos_file_info_t *file_info )
+int32_t UVOS_SPIF_Dir_Read( struct uvos_fs_dir *dp, struct uvos_file_info *file_info )
 {
   struct lfs_info finfo;
 

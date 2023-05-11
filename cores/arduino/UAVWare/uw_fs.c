@@ -59,7 +59,7 @@ static int fres;
    Returns 0 on success, or fs_error_t (negative) on failure */
 int UW_fs_init( void )
 {
-	uvos_fs_vol_info_t vol_info;
+	struct uvos_fs_vol_info vol_info;
 
 	/* Mount file system */
 	if ( fs_driver->mount_fs() < 0 ) {
@@ -104,7 +104,7 @@ bool UW_fs_is_valid( void )
 // Returns 0 on success, -1 if FS not valid, -2 on request failure
 int UW_fs_get_vol_info( UW_fs_vol_info_t *UW_vol_info )
 {
-	uvos_fs_vol_info_t vol_info;
+	struct uvos_fs_vol_info vol_info;
 
 	/* File system should be mounted */
 	if ( !fs_driver->is_mounted() ) {
@@ -124,8 +124,8 @@ int UW_fs_get_vol_info( UW_fs_vol_info_t *UW_vol_info )
 
 int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize )
 {
-	uvos_fs_file_t fsrc;
-	uvos_fs_file_t *fp = &fsrc;
+	struct uvos_fs_file fsrc;
+	struct uvos_fs_file *fp = &fsrc;
 	int result;
 	uint32_t bytes_read;
 
@@ -151,8 +151,8 @@ int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize )
 
 int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize )
 {
-	uvos_fs_file_t file;
-	uvos_fs_file_t *fp = &file;
+	struct uvos_fs_file file;
+	struct uvos_fs_file *fp = &file;
 	int result;
 	uint32_t bytes_written;
 
@@ -335,7 +335,7 @@ int UW_fs_dir_read( UW_fs_dir_t *dir, UW_fs_file_info_t *dir_info )
 	}
 
 	/* fres = positive value on success, 0 at the end of directory, or a negative error code on failure. */
-	fres = fs_driver->dir_read( dir, ( uvos_file_info_t * )dir_info );
+	fres = fs_driver->dir_read( dir, ( struct uvos_file_info * )dir_info );
 	if ( fres == 0 ) {
 		return 0; // end of directory
 	} else if ( fres > 0 ) {
