@@ -58,6 +58,9 @@
 /* UVOS common peripherals */
 #define UVOS_INCLUDE_LED
 #define UVOS_INCLUDE_SERVO
+
+/* UVOS file system persistent storage */
+#define UVOS_INCLUDE_FS
 // #define UVOS_INCLUDE_FLASH
 #define UVOS_INCLUDE_SDCARD
 #define UVOS_FLASHFS_LOGFS_MAX_DEVS 5

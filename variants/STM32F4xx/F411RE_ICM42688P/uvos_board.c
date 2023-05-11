@@ -182,8 +182,9 @@ static void UVOS_Board_configure_ibus( const struct uvos_usart_cfg *usart_cfg )
  * initializes all the core subsystems on this specific hardware
  * called from uavware.c
  */
-WEAK int32_t UVOS_Board_Init( void )
+int32_t UVOS_Board_Init( void )
 {
+  int32_t ret;
 
 #if defined( UVOS_INCLUDE_LED )
   const struct uvos_gpio_cfg *led_cfg  = &uvos_led_cfg;
@@ -203,14 +204,16 @@ WEAK int32_t UVOS_Board_Init( void )
     return -1;
   }
 
-#if defined( UVOS_INCLUDE_FLASH )
   /* Set up the SPI interface to the flash */
   if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
     return -1;
   }
-  // Initialize the external USER flash
-  // if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-  if ( UVOS_Flash_Jedec_Init( &uvos_spi_storage_id, uvos_spi_storage_id, 0 ) ) {
+
+#if defined( UVOS_INCLUDE_FLASH )
+
+  /* Enable and mount the SPI Flash, and retrieve pointer to interface driver */
+  ret = UVOS_SPIF_Init( uvos_spi_storage_id );
+  if ( ret < 0 ) {
     return -2;
   }
 
@@ -218,19 +221,26 @@ WEAK int32_t UVOS_Board_Init( void )
   UVOS_Flash_Jedec_EraseChip( uvos_spi_flash_id );
 #endif // defined( ERASE_SYSTEM_FLASH )
 
+  /* Set up the file sysytem interface */
+  if ( UVOS_FS_Init( &uvos_fs_spif_driver ) ) {
+    return -3;
+  }
+
 #endif // defined( UVOS_INCLUDE_FLASH )
 
 #if defined( UVOS_INCLUDE_SDCARD )
-  /* Set up the SPI interface to the flash */
-  if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
-    return -1;
-  }
-  /* Enable and mount the SDCard */
-  UVOS_SDCARD_Init( uvos_spi_storage_id );
 
-  if ( UVOS_SDCARD_MountFS() ) {
+  /* Enable and mount the SDCard */
+  ret = UVOS_SDCARD_Init( uvos_spi_storage_id );
+  if ( ret < 0 ) {
     return -2;
   }
+
+  /* Set up the file sysytem interface */
+  if ( UVOS_FS_Init( &uvos_fs_sdcard_driver ) ) {
+    return -3;
+  }
+
 #endif // defined( UVOS_INCLUDE_SDCARD )
 
 #if defined( UVOS_INCLUDE_EXTI )

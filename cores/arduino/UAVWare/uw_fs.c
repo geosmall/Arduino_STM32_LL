@@ -7,42 +7,53 @@ static int fres;
 
 /* Provide a flash file system drivers, for either
 	 FatFS based SD Card or LittleFS based serial flash */
-static const struct uvos_fs_driver_t uw_fs_driver = {
+// static const struct uvos_fs_driver_t uw_fs_driver = {
+// #if defined( UVOS_INCLUDE_FLASH )
+// 	.mount_fs = UVOS_SPIF_MountFS,
+// 	.unmount_fs = UVOS_SPIF_UnmountFS,
+// 	.is_mounted = UVOS_SPIF_IsMounted,
+// 	.get_vol_info = UVOS_SPIF_GetVolInfo,
+// 	.file_open = UVOS_SPIF_File_Open,
+// 	.file_read = UVOS_SPIF_File_Read,
+// 	.file_write = UVOS_SPIF_File_Write,
+// 	.file_seek = UVOS_SPIF_File_Seek,
+// 	.file_tell = UVOS_SPIF_File_Tell,
+// 	.file_close = UVOS_SPIF_File_Close,
+// 	.file_remove = UVOS_SPIF_File_Remove,
+// 	.dir_open = UVOS_SPIF_Dir_Open,
+// 	.dir_close = UVOS_SPIF_Dir_Close,
+// 	.dir_read = UVOS_SPIF_Dir_Read,
+// #elif defined( UVOS_INCLUDE_SDCARD )
+// 	.mount_fs = UVOS_SDCARD_MountFS,
+// 	.unmount_fs = UVOS_SDCARD_UnmountFS,
+// 	.is_mounted = UVOS_SDCARD_IsMounted,
+// 	.get_vol_info = UVOS_SDCARD_GetVolInfo,
+// 	.file_open = UVOS_SDCARD_File_Open,
+// 	.file_read = UVOS_SDCARD_File_Read,
+// 	.file_write = UVOS_SDCARD_File_Write,
+// 	.file_seek = UVOS_SDCARD_File_Seek,
+// 	.file_tell = UVOS_SDCARD_File_Tell,
+// 	.file_close = UVOS_SDCARD_File_Close,
+// 	.file_remove = UVOS_SDCARD_File_Remove,
+// 	.dir_open = UVOS_SDCARD_Dir_Open,
+// 	.dir_close = UVOS_SDCARD_Dir_Close,
+// 	.dir_read = UVOS_SDCARD_Dir_Read,
+// #else
+// #error No SPI based storage defined
+// #endif // defined( UVOS_INCLUDE_FLASH )
+// };
+// static const struct uvos_fs_driver_t *fs_driver = &uw_fs_driver;
+
+#include "uvos_fs_priv.h"
+
 #if defined( UVOS_INCLUDE_FLASH )
-	.mount_fs = UVOS_SPIF_MountFS,
-	.unmount_fs = UVOS_SPIF_UnmountFS,
-	.is_mounted = UVOS_SPIF_IsMounted,
-	.get_vol_info = UVOS_SPIF_GetVolInfo,
-	.file_open = UVOS_SPIF_File_Open,
-	.file_read = UVOS_SPIF_File_Read,
-	.file_write = UVOS_SPIF_File_Write,
-	.file_seek = UVOS_SPIF_File_Seek,
-	.file_tell = UVOS_SPIF_File_Tell,
-	.file_close = UVOS_SPIF_File_Close,
-	.file_remove = UVOS_SPIF_File_Remove,
-	.dir_open = UVOS_SPIF_Dir_Open,
-	.dir_close = UVOS_SPIF_Dir_Close,
-	.dir_read = UVOS_SPIF_Dir_Read,
+	static const struct uvos_fs_driver *fs_driver = &uvos_fs_spif_driver;
 #elif defined( UVOS_INCLUDE_SDCARD )
-	.mount_fs = UVOS_SDCARD_MountFS,
-	.unmount_fs = UVOS_SDCARD_UnmountFS,
-	.is_mounted = UVOS_SDCARD_IsMounted,
-	.get_vol_info = UVOS_SDCARD_GetVolInfo,
-	.file_open = UVOS_SDCARD_File_Open,
-	.file_read = UVOS_SDCARD_File_Read,
-	.file_write = UVOS_SDCARD_File_Write,
-	.file_seek = UVOS_SDCARD_File_Seek,
-	.file_tell = UVOS_SDCARD_File_Tell,
-	.file_close = UVOS_SDCARD_File_Close,
-	.file_remove = UVOS_SDCARD_File_Remove,
-	.dir_open = UVOS_SDCARD_Dir_Open,
-	.dir_close = UVOS_SDCARD_Dir_Close,
-	.dir_read = UVOS_SDCARD_Dir_Read,
+	static const struct uvos_fs_driver *fs_driver = &uvos_fs_sdcard_driver;
 #else
 #error No SPI based storage defined
 #endif // defined( UVOS_INCLUDE_FLASH )
-};
-static const struct uvos_fs_driver_t *fs_driver = &uw_fs_driver;
+
 
 /* Initialize logical file system, mounts and retrieves volume info
    Returns 0 on success, or fs_error_t (negative) on failure */

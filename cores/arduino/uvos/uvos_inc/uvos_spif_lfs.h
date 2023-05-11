@@ -1,7 +1,7 @@
 #ifndef UVOS_SPIF_H
 #define UVOS_SPIF_H
 
-#include "uvos_fs_driver.h"
+#include "uvos_fs.h"
 
 // SPI Flash volume information structure
 typedef struct {

@@ -800,6 +800,13 @@ const struct uvos_servo_cfg uvos_servo_cfg_out = {
 
 #if defined(UVOS_INCLUDE_RCVR)
 
-#include "uvos_rcvr_priv.h"
+#include <uvos_rcvr_priv.h>
 
 #endif /* UVOS_INCLUDE_RCVR */
+
+
+#if defined(UVOS_INCLUDE_FS)
+
+#include <uvos_fs_priv.h>
+
+#endif /* UVOS_INCLUDE_FS */

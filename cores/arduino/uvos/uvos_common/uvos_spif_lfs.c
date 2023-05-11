@@ -1,9 +1,28 @@
 #include "uvos.h"
+#include "uvos_fs.h"
+#include "uvos_fs_priv.h"
 #include "uvos_spi_priv.h"
-#include "uvos_fs_driver.h"
 #include "uvos_flash_jedec_priv.h"
 
 #ifdef UVOS_INCLUDE_FLASH
+
+/* Provide a file system driver */
+const struct uvos_fs_driver uvos_fs_spif_driver = {
+  .mount_fs = UVOS_SPIF_MountFS,
+  .unmount_fs = UVOS_SPIF_UnmountFS,
+  .is_mounted = UVOS_SPIF_IsMounted,
+  .get_vol_info = UVOS_SPIF_GetVolInfo,
+  .file_open = UVOS_SPIF_File_Open,
+  .file_read = UVOS_SPIF_File_Read,
+  .file_write = UVOS_SPIF_File_Write,
+  .file_seek = UVOS_SPIF_File_Seek,
+  .file_tell = UVOS_SPIF_File_Tell,
+  .file_close = UVOS_SPIF_File_Close,
+  .file_remove = UVOS_SPIF_File_Remove,
+  .dir_open = UVOS_SPIF_Dir_Open,
+  .dir_close = UVOS_SPIF_Dir_Close,
+  .dir_read = UVOS_SPIF_Dir_Read,
+};
 
 #define FS_FILE_NAME_SIZE  32 /* Length of file name, used in FS buffers */
 #define LFS_PAGE_SIZE 256
@@ -377,7 +396,7 @@ int32_t UVOS_SPIF_Dir_Read( uvos_fs_dir_t *dp, uvos_file_info_t *file_info )
   strncpy( file_info->name, finfo.name, UVOS_FILE_NAME_Z );
   file_info->name[UVOS_FILE_NAME_Z - 1] = '\0';
 
-  if (fres > 0) {
+  if ( fres > 0 ) {
     return true; // success
   } else {
     return 0; // end of directory

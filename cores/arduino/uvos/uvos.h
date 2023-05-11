@@ -133,9 +133,15 @@ extern "C" {
 #include <uvos_mpu.h>
 #endif
 
+#ifdef UVOS_INCLUDE_FS
+#include <uvos_fs.h>
+#include <ff.h>
+#include <lfs.h>
+#endif
+
 #ifdef UVOS_INCLUDE_SDCARD
 #define LOG_FILENAME "startup.log"
-#include <ff.h>
+// #include <ff.h>
 #include <uvos_sdcard_fatfs.h>
 #endif
 
@@ -143,7 +149,7 @@ extern "C" {
 /* #define UVOS_INCLUDE_FLASH_LOGFS_SETTINGS */
 /* #define FLASH_FREERTOS */
 #include <uvos_flash.h>
-#include <lfs.h>
+// #include <lfs.h>
 #include <uvos_spif_lfs.h>
 #endif
 

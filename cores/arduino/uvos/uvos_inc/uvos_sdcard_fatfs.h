@@ -1,7 +1,7 @@
 #ifndef UVOS_SDCARD_H
 #define UVOS_SDCARD_H
 
-#include "uvos_fs_driver.h"
+#include "uvos_fs.h"
 
 // SD Card volume information structure
 typedef struct {

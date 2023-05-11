@@ -1,9 +1,28 @@
 #include "uvos.h"
+#include "uvos_fs.h"
+#include "uvos_fs_priv.h"
 #include "uvos_spi_priv.h"
-#include "uvos_fs_driver.h"
 #include "diskio.h" // FatFS interface
 
 #ifdef UVOS_INCLUDE_SDCARD
+
+/* Provide a file system driver */
+const struct uvos_fs_driver uvos_fs_sdcard_driver = {
+  .mount_fs = UVOS_SDCARD_MountFS,
+  .unmount_fs = UVOS_SDCARD_UnmountFS,
+  .is_mounted = UVOS_SDCARD_IsMounted,
+  .get_vol_info = UVOS_SDCARD_GetVolInfo,
+  .file_open = UVOS_SDCARD_File_Open,
+  .file_read = UVOS_SDCARD_File_Read,
+  .file_write = UVOS_SDCARD_File_Write,
+  .file_seek = UVOS_SDCARD_File_Seek,
+  .file_tell = UVOS_SDCARD_File_Tell,
+  .file_close = UVOS_SDCARD_File_Close,
+  .file_remove = UVOS_SDCARD_File_Remove,
+  .dir_open = UVOS_SDCARD_Dir_Open,
+  .dir_close = UVOS_SDCARD_Dir_Close,
+  .dir_read = UVOS_SDCARD_Dir_Read,
+};
 
 /* Local Definitions */
 #if !defined( SDCARD_MUTEX_TAKE )
