@@ -92,7 +92,7 @@ extern int32_t UVOS_FS_FileWrite( struct uvos_fs_file *file, const void *buf, ui
 extern int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, int32_t offset );
 extern uint32_t UVOS_FS_FileTell( struct uvos_fs_file *file );
 extern int32_t UVOS_FS_FileClose( struct uvos_fs_file *file );
-extern int32_t UVOS_FS_FileRemove( const char *path );
+extern int32_t UVOS_FS_Remove( const char *path );
 extern int32_t UVOS_FS_DirOpen( struct uvos_fs_dir *dir, const char *path );
 extern int32_t UVOS_FS_DirClose( struct uvos_fs_dir *dir );
 extern int32_t UVOS_FS_DirRead( struct uvos_fs_dir *dir, struct uvos_file_info *dir_info );

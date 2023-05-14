@@ -189,16 +189,16 @@ int32_t UVOS_FS_FileClose( struct uvos_fs_file *file )
   return 0;
 }
 
-/* Delete a file
+/* Delete a file or directory
    Returns 0 if file open is successful, negative number if unsuccessful */
-int32_t UVOS_FS_FileRemove( const char *path )
+int32_t UVOS_FS_Remove( const char *path )
 {
   /* Verify file system is mounted and valid type */
   if ( !UVOS_FS_IsValid() ) {
     return -1;
   }
 
-  fres = uvos_fs_driver->file_remove( path );
+  fres = uvos_fs_driver->remove( path );
   if ( fres ) {
     return -2;
   }

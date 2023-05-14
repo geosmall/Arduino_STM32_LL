@@ -17,7 +17,8 @@ static int32_t UVOS_SDCARD_File_Write( struct uvos_fs_file *fp, const void *buf,
 static int32_t UVOS_SDCARD_File_Seek( struct uvos_fs_file *fp, int32_t offset );
 static uint32_t UVOS_SDCARD_File_Tell( struct uvos_fs_file *fp );
 static int32_t UVOS_SDCARD_File_Close( struct uvos_fs_file *fp );
-static int32_t UVOS_SDCARD_File_Remove( const char *path );
+
+static int32_t UVOS_SDCARD_Remove( const char *path );
 
 static int32_t UVOS_SDCARD_Dir_Open( struct uvos_fs_dir *dp, const char *path );
 static int32_t UVOS_SDCARD_Dir_Close( struct uvos_fs_dir *dp );
@@ -36,7 +37,7 @@ const struct uvos_fs_driver uvos_fs_sdcard_driver = {
   .file_seek = UVOS_SDCARD_File_Seek,
   .file_tell = UVOS_SDCARD_File_Tell,
   .file_close = UVOS_SDCARD_File_Close,
-  .file_remove = UVOS_SDCARD_File_Remove,
+  .remove = UVOS_SDCARD_Remove,
   .dir_open = UVOS_SDCARD_Dir_Open,
   .dir_close = UVOS_SDCARD_Dir_Close,
   .dir_read = UVOS_SDCARD_Dir_Read,
@@ -288,8 +289,10 @@ static int32_t UVOS_SDCARD_File_Close( struct uvos_fs_file *fp )
   return 0;
 }
 
-static int32_t UVOS_SDCARD_File_Remove( const char *path )
+static int32_t UVOS_SDCARD_Remove( const char *path )
 {
+  // If removing a directory, directory must be empty and not read-only
+  // Returns a negative error code on failure.
   fres = f_unlink( path );
   if ( fres != FR_OK ) {
     return -1;

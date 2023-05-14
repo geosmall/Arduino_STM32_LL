@@ -117,7 +117,7 @@ int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize 
 	return FS_ERR_OK;
 }
 
-int UW_fs_remove_file( const char *path )
+int UW_fs_remove( const char *path )
 {
 	int result;
 
@@ -126,7 +126,7 @@ int UW_fs_remove_file( const char *path )
 		return FS_ERR_NOT_VALID;
 	}
 
-	result = UVOS_FS_FileRemove( path );
+	result = UVOS_FS_Remove( path );
 	if ( result ) {
 		return FS_ERR_FAILED;
 	}

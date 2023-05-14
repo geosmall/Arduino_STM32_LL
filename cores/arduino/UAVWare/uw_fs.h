@@ -94,9 +94,9 @@ extern int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize );
 // Returns 0 on success, or -1 on failure
 extern int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize );
 
-// Delete a file
+// Delete a file or directory
 // Returns 0 on success, or negative error code on failure
-extern int UW_fs_remove_file( const char *path );
+extern int UW_fs_remove( const char *path );
 
 // Open a directory for listing its contents
 // Returns 0 on success, or negative error code on failure
