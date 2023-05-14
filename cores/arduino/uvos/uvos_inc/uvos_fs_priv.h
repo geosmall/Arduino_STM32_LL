@@ -37,4 +37,24 @@ typedef enum {
   // LFS_FOPEN_MODE_APX = LFS_O_RDWR   | LFS_O_CREAT | LFS_O_EXCL | LFS_O_APPEND  // Open for reading and writing, fail if exists or append
 } LittleFS_fopen_mode_t;
 
+struct uvos_fs_driver {
+  int32_t ( *mount_fs )( void );
+  int32_t ( *unmount_fs )( void );
+  bool ( *is_mounted )( void );
+  int32_t ( *get_vol_info )( struct uvos_fs_vol_info *vol_info );
+  int32_t ( *file_open )( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode );
+  int32_t ( *file_read )( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
+  int32_t ( *file_write )( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
+  int32_t ( *file_seek )( struct uvos_fs_file *fp, int32_t offset );
+  uint32_t ( *file_tell )( struct uvos_fs_file *fp );
+  int32_t ( *file_close )( struct uvos_fs_file *fp );
+  int32_t ( *file_remove )( const char *path );
+  int32_t ( *dir_open )( struct uvos_fs_dir *dp, const char *path );
+  int32_t ( *dir_close )( struct uvos_fs_dir *dp );
+  int32_t ( *dir_read )( struct uvos_fs_dir *dp, struct uvos_file_info *file_info );
+  int32_t ( *mkdir )( const char *path );
+};
+
+extern int32_t UVOS_FS_Init( const struct uvos_fs_driver *fs_driver );
+
 #endif /* UVOS_FS_PRIV_H */

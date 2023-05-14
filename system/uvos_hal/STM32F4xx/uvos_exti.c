@@ -83,9 +83,6 @@ uint32_t UVOS_EXTI_gpio_port_to_exti_source_port( GPIO_TypeDef * gpio_port )
   return 0xFF;
 }
 
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
-
 uint32_t UVOS_EXTI_gpio_pin_to_exti_source_pin( uint32_t gpio_pin )
 {
   switch ( ( uint32_t )gpio_pin ) {
@@ -145,8 +142,6 @@ uint32_t UVOS_EXTI_gpio_pin_to_exti_source_pin( uint32_t gpio_pin )
   UVOS_Assert( 0 );
   return 0;
 }
-
-#pragma GCC pop_options
 
 int32_t UVOS_EXTI_Init( const struct uvos_exti_cfg * cfg )
 {

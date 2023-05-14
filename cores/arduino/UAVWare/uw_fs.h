@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-// #include "ff.h"
-// #include "lfs.h"
 #include "uvos_fs.h"
 
 // A POSIX-like file system interface that can be implemented by different file systems
@@ -53,13 +51,6 @@ extern "C" {
           file.
 */
 
-// A file or directory information structure
-// typedef struct {
-//   char name[256]; // The name of the file or directory
-//   uint32_t size; // The size of the file in bytes
-//   bool is_dir; // Whether the entry is a directory or not
-// } UW_file_info_t;
-
 // Storage volume information structure
 typedef struct {
   uint32_t vol_total_Kbytes;
@@ -82,64 +73,37 @@ struct uvos_fs_file typedef UW_fs_file_t;
 struct uvos_fs_dir typedef UW_fs_dir_t;
 struct uvos_file_info typedef UW_fs_file_info_t;
 
-// Reads in a file from file system into provided buffer
-// Returns 0 on success, or -1 on failure
-extern int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize );
-
-// Writrs a file to file system from provided buffer
-// Returns 0 on success, or -1 on failure
-extern int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize );
 
 // Initialize and mount a logical file system
-// Returns 0 on success, or -1 on failure
+// Returns 0 on success, or negative error code on failure
 extern int UW_fs_init( void );
-
-// Unmounts logical file system
-// Returns FS_ERR_OK (0) on success, or FS_ERR_FAILED (negative) on failure
-extern int UW_fs_deinit( void );
 
 /* Check that file system is mounted and of valid type */
 // Returns true on success, or false on failure
 extern bool UW_fs_is_valid( void );
 
 // Get volume info (total and free Kbytes)
-// Returns 0 on success, or -1 on failure
+// Returns 0 on success, or negative error code on failure
 extern int UW_fs_get_vol_info( UW_fs_vol_info_t *vol_info );
 
-// Open a file in a given mode per uvos_fopen_mode_t
-// Returns 0 if file open is successful, -1 if unsuccessful
-extern int UW_fs_file_open( UW_fs_file_t *file, const char *path, uvos_fopen_mode_t mode );
+// Reads in a file from file system into provided buffer
+// Returns 0 on success, or negative error code on failure
+extern int UW_fs_read_file( const char *srcPath, uint8_t *buf, size_t bufSize );
 
-// Read data from a file into a buffer
-// Returns the number of bytes read, or -1 on failure
-extern int UW_fs_file_read( UW_fs_file_t *file, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
-
-// Write data from a buffer into a file
-// Returns the number of bytes written, or -1 on failure
-extern int UW_fs_file_write( UW_fs_file_t *file, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-
-// Seek to a position in a file
+// Writrs a file to file system from provided buffer
 // Returns 0 on success, or -1 on failure
-extern int UW_fs_file_seek( UW_fs_file_t *file, int32_t offset );
-
-// Get the current position in a file
-// Returns current read/write pointer of the file
-extern uint32_t UW_fs_file_tell( UW_fs_file_t *file );
-
-// Close a file
-// Returns 0 on success, or -1 on failure
-extern int UW_fs_file_close( UW_fs_file_t *file );
+extern int UW_fs_write_file( const char *filePath , const uint8_t *buf, size_t bufSize );
 
 // Delete a file
-// Returns 0 on success, or -1 on failure
-extern int UW_fs_file_remove( const char *path );
+// Returns 0 on success, or negative error code on failure
+extern int UW_fs_remove_file( const char *path );
 
 // Open a directory for listing its contents
-// Returns 0 on success, or negative number on failure
+// Returns 0 on success, or negative error code on failure
 extern int UW_fs_dir_open( UW_fs_dir_t *dir, const char *path );
 
 // Close a directory
-// Returns 0 on success, or negative number on failure
+// Returns 0 on success, or negative error code on failure
 extern int UW_fs_dir_close( UW_fs_dir_t *dir );
 
 // Read the next entry in a directory
@@ -147,7 +111,7 @@ extern int UW_fs_dir_close( UW_fs_dir_t *dir );
 extern int UW_fs_dir_read( UW_fs_dir_t *dir, UW_fs_file_info_t *dir_info );
 
 // Create a directory
-// Returns 0 on success, or negative number on failure
+// Returns 0 on success, or negative error code on failure
 extern int UW_fs_mkdir( const char *path );
 
 #ifdef __cplusplus
