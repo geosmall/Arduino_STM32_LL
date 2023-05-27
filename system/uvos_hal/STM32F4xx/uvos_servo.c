@@ -31,7 +31,7 @@ int32_t UVOS_Servo_Init( const struct uvos_servo_cfg *cfg )
   uint32_t tim_id;
 
   /* Initialize the servo output pins */
-  if ( UVOS_TIM_InitChannels( &tim_id, cfg->channels, cfg->num_channels, NULL, 0 ) ) {
+  if ( UVOS_TIM_InitDevice( &tim_id, TIMDEV_TYPE_STD, cfg->channels, cfg->num_channels, NULL, 0 ) ) {
     return -1;
   }
 

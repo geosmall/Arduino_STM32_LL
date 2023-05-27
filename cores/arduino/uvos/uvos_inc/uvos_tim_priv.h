@@ -15,8 +15,6 @@
 #define TIM_IT_Break                       ((uint16_t)0x0080)
 #define IS_TIM_IT(IT) ((((IT) & (uint16_t)0xFF00) == 0x0000) && ((IT) != 0x0000))
 
-#define UVOS_TIM_ALL_FLAGS TIM_IT_Update | TIM_IT_CC1 | TIM_IT_CC2 | TIM_IT_CC3 | TIM_IT_CC4 | TIM_IT_Trigger | TIM_IT_Break
-
 #define IS_TIM_GET_IT(IT) (((IT) == TIM_IT_Update) || \
                            ((IT) == TIM_IT_CC1) || \
                            ((IT) == TIM_IT_CC2) || \
@@ -29,14 +27,15 @@
 // STM32 SPL compatibility ------------------------------------<<<
 
 struct uvos_tim_clock_cfg {
-  TIM_TypeDef * timer;
-  const LL_TIM_InitTypeDef * time_base_init;
+  TIM_TypeDef *timer;
+  const LL_TIM_InitTypeDef *time_base_init;
   struct stm32_irq irq;
 };
 
 struct uvos_tim_channel {
-  TIM_TypeDef * timer;
+  TIM_TypeDef *timer;
   uint16_t     timer_chan;
+
   struct stm32_gpio pin;
   // uint32_t    remap;
 };
@@ -46,8 +45,20 @@ struct uvos_tim_callbacks {
   void ( *edge )( uint32_t tim_id, uint32_t context, uint8_t chan_idx, uint16_t count );
 };
 
-extern int32_t UVOS_TIM_InitClock( const struct uvos_tim_clock_cfg * cfg );
-extern int32_t UVOS_TIM_InitTimebase( uint32_t * tim_id, const TIM_TypeDef * timer, const struct uvos_tim_callbacks * callbacks, uint32_t context );
-extern int32_t UVOS_TIM_InitChannels( uint32_t * tim_id, const struct uvos_tim_channel * channels, uint8_t num_channels, const struct uvos_tim_callbacks * callbacks, uint32_t context );
+enum uvos_tim_dev_type {
+  TIMDEV_TYPE_INVALID = 0,
+  TIMDEV_TYPE_STD,
+  TIMDEV_TYPE_TIMEBASE,
+};
+
+extern int32_t UVOS_TIM_InitClock( const struct uvos_tim_clock_cfg *cfg );
+// extern int32_t UVOS_TIM_InitDevice( uint32_t *tim_id, const struct uvos_tim_channel *channels, uint8_t num_channels, const struct uvos_tim_callbacks *callbacks, uint32_t context );
+extern int32_t UVOS_TIM_InitDevice( uint32_t *tim_id,
+                               enum uvos_tim_dev_type type,
+                               const struct uvos_tim_channel *channels,
+                               uint8_t num_channels,
+                               const struct uvos_tim_callbacks *callbacks,
+                               uint32_t context );
+extern int32_t UVOS_TIM_SetCallbacks( uint32_t tim_id, const struct uvos_tim_callbacks *callbacks );
 
 #endif /* UVOS_TIM_PRIV_H */

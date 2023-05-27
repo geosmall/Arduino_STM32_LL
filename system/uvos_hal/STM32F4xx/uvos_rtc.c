@@ -303,7 +303,7 @@ void UVOS_RTC_irq_handler( void )
   }
 }
 
-time_t UW_RTC__get_timestamp( void )
+time_t UW_RTC_GetTimeStamp( void )
 {
   time_t timestamp;
   struct tm currTime;

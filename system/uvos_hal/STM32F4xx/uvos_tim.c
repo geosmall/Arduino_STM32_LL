@@ -10,8 +10,7 @@ enum uvos_tim_dev_magic {
 
 struct uvos_tim_dev {
   enum uvos_tim_dev_magic magic;
-
-  const TIM_TypeDef *timer;
+  enum uvos_tim_dev_type type;
 
   const struct uvos_tim_channel *channels;
   uint8_t num_channels;
@@ -19,6 +18,12 @@ struct uvos_tim_dev {
   const struct uvos_tim_callbacks *callbacks;
   uint32_t context;
 };
+#define UVOS_TIM_ALL_FLAGS TIM_IT_Update | TIM_IT_CC1 | TIM_IT_CC2 | TIM_IT_CC3 | TIM_IT_CC4 | TIM_IT_Trigger | TIM_IT_Break
+
+static bool UVOS_TIM_validate( const struct uvos_tim_dev *tim_dev )
+{
+  return tim_dev->magic == UVOS_TIM_DEV_MAGIC;
+}
 
 // STM32 SPL compatibility ------------------------------------>>>
 
@@ -130,7 +135,7 @@ int32_t UVOS_TIM_InitClock( const struct uvos_tim_clock_cfg *cfg )
 
   // Advanced timers TIM1 & TIM8 (STM32F405 only) need special handling:
   // There are up to 4 separate interrupts handlers for each advanced timer, but
-  // pios_tim_clock_cfg has provision for only one irq init, so we take care here
+  // uvos_tim_clock_cfg has provision for only one irq init, so we take care here
   // to enable additional irq channels that we intend to use.
 
   // if ( IS_TIM_ADVANCED_INSTANCE( cfg->timer ) )
@@ -149,35 +154,15 @@ int32_t UVOS_TIM_InitClock( const struct uvos_tim_clock_cfg *cfg )
   return 0;
 }
 
-int32_t UVOS_TIM_InitTimebase( uint32_t *tim_id, const TIM_TypeDef *timer, const struct uvos_tim_callbacks *callbacks, uint32_t context )
-{
-  UVOS_Assert( IS_TIM_INSTANCE( timer ) );
-
-  struct uvos_tim_dev *tim_dev;
-  tim_dev = ( struct uvos_tim_dev * )UVOS_TIM_alloc();
-  if ( !tim_dev ) {
-    goto out_fail;
-  }
-
-  /* Bind the configuration to the device instance, set channels to NULL for timebase */
-  tim_dev->timer        = timer;
-  tim_dev->channels     = NULL;
-  tim_dev->num_channels = 0;
-  tim_dev->callbacks    = callbacks;
-  tim_dev->context      = context;
-
-  *tim_id = ( uint32_t )tim_dev;
-
-  return 0;
-
-out_fail:
-  return -1;
-}
-
-int32_t UVOS_TIM_InitChannels( uint32_t *tim_id, const struct uvos_tim_channel *channels, uint8_t num_channels, const struct uvos_tim_callbacks *callbacks, uint32_t context )
+int32_t UVOS_TIM_InitDevice( uint32_t *tim_id,
+                             enum uvos_tim_dev_type type,
+                             const struct uvos_tim_channel *channels,
+                             uint8_t num_channels,
+                             const struct uvos_tim_callbacks *callbacks,
+                             uint32_t context )
 {
   UVOS_Assert( channels );
-  UVOS_Assert( num_channels );
+  // UVOS_Assert( num_channels );
 
   struct uvos_tim_dev *tim_dev;
   tim_dev = ( struct uvos_tim_dev * )UVOS_TIM_alloc();
@@ -186,19 +171,19 @@ int32_t UVOS_TIM_InitChannels( uint32_t *tim_id, const struct uvos_tim_channel *
   }
 
   /* Bind the configuration to the device instance, set timer to NULL for channels */
-  tim_dev->timer        = NULL;
+  tim_dev->type         = type;
   tim_dev->channels     = channels;
   tim_dev->num_channels = num_channels;
   tim_dev->callbacks    = callbacks;
   tim_dev->context      = context;
 
-  /* Configure the pins */
+  /* Configure any associated pins */
   for ( uint8_t i = 0; i < num_channels; i++ ) {
     const struct uvos_tim_channel *chan = &( channels[i] );
     if ( IS_GPIO_ALL_INSTANCE( chan->pin.gpio ) ) {
       LL_GPIO_Init( chan->pin.gpio, ( LL_GPIO_InitTypeDef * ) & chan->pin.init );
-    } else {
-      UVOS_Assert( 0 );
+      // } else {
+      //   UVOS_Assert( 0 );
     }
   }
 
@@ -210,25 +195,18 @@ out_fail:
   return -1;
 }
 
-// void TimerUpdate_Callback( void )
-// {
-//   asm( "NOP" );
-// }
+int32_t UVOS_TIM_SetCallbacks( uint32_t tim_id, const struct uvos_tim_callbacks *callbacks )
+{
+  struct uvos_tim_dev *tim_dev = ( struct uvos_tim_dev * )tim_id;
 
-// void TIM1_TRG_COM_TIM11_IRQHandler( void )
-// {
-//   /* Check whether update interrupt is pending */
-//   // if ( LL_TIM_IsActiveFlag_UPDATE( TIM11 ) == 1 ) {
-//   //   /* Clear the update interrupt flag*/
-//   //   LL_TIM_ClearFlag_UPDATE( TIM11 );
-//   // }
+  if ( !UVOS_TIM_validate( tim_dev ) ) {
+    return -1;
+  }
 
-//   if ( READ_BIT( TIM11->SR, TIM_SR_UIF ) == ( TIM_SR_UIF ) ) {
-//     WRITE_REG( TIM11->SR, ~( TIM_SR_UIF ) );
-//     // CLEAR_BIT(TIM11->SR, TIM_SR_UIF);
-//     TimerUpdate_Callback();
-//   }
-// }
+  /* Update the callback function array */
+  tim_dev->callbacks    = callbacks;
+  return 0;
+}
 
 static void UVOS_TIM_generic_irq_handler( TIM_TypeDef *timer )
 {
@@ -236,140 +214,162 @@ static void UVOS_TIM_generic_irq_handler( TIM_TypeDef *timer )
   for ( uint8_t i = 0; i < uvos_tim_num_devs; i++ ) {
     const struct uvos_tim_dev *tim_dev = &uvos_tim_devs[i];
 
-    if ( !tim_dev->channels || tim_dev->num_channels == 0 ) {
-      /* No channels to process on this client */
+    if ( tim_dev->type == TIMDEV_TYPE_TIMEBASE ) {
+
       if ( TIM_GetITStatus( timer, TIM_IT_Update ) == SET ) {
         TIM_ClearITPendingBit( timer, TIM_IT_Update );
-        // if ( LL_TIM_IsActiveFlag_UPDATE( timer ) == SET ) {
-        //   LL_TIM_ClearFlag_UPDATE( timer );
-        // if (READ_BIT(TIM11->SR, TIM_SR_UIF) == (TIM_SR_UIF)) {
-        //   WRITE_REG(TIM11->SR, ~(TIM_SR_UIF));
-        // if ( LL_TIM_IsActiveFlag_UPDATE( TIM11 ) == 1 ) {
-        //   LL_TIM_ClearFlag_UPDATE( TIM11 );
-        if ( tim_dev->callbacks->overflow ) {
-          ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev, tim_dev->context, 0, 0 );
-        }
       }
-      continue;
-    }
+      if ( tim_dev->callbacks->overflow ) {
+        ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev, tim_dev->context, 0, 0 );
+      }
 
-    /* Check for an overflow event on this timer */
-    bool overflow_event;
-    uint16_t overflow_count;
-
-    if ( TIM_GetITStatus( timer, TIM_IT_Update ) == SET ) {
-      TIM_ClearITPendingBit( timer, TIM_IT_Update );
-      // if ( LL_TIM_IsActiveFlag_UPDATE( timer ) == SET ) {
-      //   LL_TIM_ClearFlag_UPDATE( timer );
-      overflow_count = timer->ARR;
-      overflow_event = true;
     } else {
-      overflow_count = 0;
-      overflow_event = false;
-    }
 
-    for ( uint8_t j = 0; j < tim_dev->num_channels; j++ ) {
-      const struct uvos_tim_channel *chan = &tim_dev->channels[j];
-
-      if ( chan->timer != timer ) {
-        /* channel is not on this timer */
+      if ( !tim_dev->channels || tim_dev->num_channels == 0 ) {
+        /* No channels to process on this client */
         continue;
       }
 
-      /* Figure out which interrupt bit we should be looking at */
-      uint16_t timer_it;
-      switch ( chan->timer_chan ) {
-      case LL_TIM_CHANNEL_CH1:
-        timer_it = TIM_IT_CC1;
-        break;
-      case LL_TIM_CHANNEL_CH2:
-        timer_it = TIM_IT_CC2;
-        break;
-      case LL_TIM_CHANNEL_CH3:
-        timer_it = TIM_IT_CC3;
-        break;
-      case LL_TIM_CHANNEL_CH4:
-        timer_it = TIM_IT_CC4;
-        break;
-      default:
-        UVOS_Assert( 0 );
-        break;
+      /* Check for an overflow event on this timer */
+      bool overflow_event;
+      uint16_t overflow_count;
+      if ( TIM_GetITStatus( timer, TIM_IT_Update ) == SET ) {
+        TIM_ClearITPendingBit( timer, TIM_IT_Update );
+        overflow_count = timer->ARR;
+        overflow_event = true;
+      } else {
+        overflow_count = 0;
+        overflow_event = false;
       }
 
-      bool edge_event;
-      uint16_t edge_count;
-      if ( TIM_GetITStatus( chan->timer, timer_it ) == SET ) {
-        TIM_ClearITPendingBit( chan->timer, timer_it );
+      for ( uint8_t j = 0; j < tim_dev->num_channels; j++ ) {
+        const struct uvos_tim_channel *chan = &tim_dev->channels[j];
 
-        /* Read the current counter */
+        if ( chan->timer != timer ) {
+          /* channel is not on this timer */
+          continue;
+        }
+
+        /* Figure out which interrupt bit we should be looking at */
+        uint16_t timer_it;
         switch ( chan->timer_chan ) {
         case LL_TIM_CHANNEL_CH1:
-          edge_count = LL_TIM_IC_GetCaptureCH1( chan->timer );
+          timer_it = TIM_IT_CC1;
           break;
         case LL_TIM_CHANNEL_CH2:
-          edge_count = LL_TIM_IC_GetCaptureCH2( chan->timer );
+          timer_it = TIM_IT_CC2;
           break;
         case LL_TIM_CHANNEL_CH3:
-          edge_count = LL_TIM_IC_GetCaptureCH3( chan->timer );
+          timer_it = TIM_IT_CC3;
           break;
         case LL_TIM_CHANNEL_CH4:
-          edge_count = LL_TIM_IC_GetCaptureCH4( chan->timer );
+          timer_it = TIM_IT_CC4;
           break;
         default:
           UVOS_Assert( 0 );
           break;
         }
-        edge_event = true;
-      } else {
-        edge_event = false;
-        edge_count = 0;
-      }
 
-      if ( !tim_dev->callbacks ) {
-        /* No callbacks registered, we're done with this channel */
-        continue;
-      }
+        bool edge_event;
+        uint16_t edge_count;
+        if ( TIM_GetITStatus( chan->timer, timer_it ) == SET ) {
+          TIM_ClearITPendingBit( chan->timer, timer_it );
 
-      /* Generate the appropriate callbacks */
-      if ( overflow_event & edge_event ) {
-        /*
-         * When both edge and overflow happen in the same interrupt, we
-         * need a heuristic to determine the order of the edge and overflow
-         * events so that the callbacks happen in the right order.  If we
-         * get the order wrong, our pulse width calculations could be off by up
-         * to ARR ticks.  That could be bad.
-         *
-         * Heuristic: If the edge_count is < 16 ticks above zero then we assume the
-         *            edge happened just after the overflow.
-         */
-
-        if ( edge_count < 16 ) {
-          /* Call the overflow callback first */
-          if ( tim_dev->callbacks->overflow ) {
-            ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev, tim_dev->context, j, overflow_count );
+          /* Read the current channel counter */
+          switch ( chan->timer_chan ) {
+          case LL_TIM_CHANNEL_CH1:
+            edge_count = LL_TIM_IC_GetCaptureCH1( chan->timer );
+            break;
+          case LL_TIM_CHANNEL_CH2:
+            edge_count = LL_TIM_IC_GetCaptureCH2( chan->timer );
+            break;
+          case LL_TIM_CHANNEL_CH3:
+            edge_count = LL_TIM_IC_GetCaptureCH3( chan->timer );
+            break;
+          case LL_TIM_CHANNEL_CH4:
+            edge_count = LL_TIM_IC_GetCaptureCH4( chan->timer );
+            break;
+          default:
+            UVOS_Assert( 0 );
+            break;
           }
-          /* Call the edge callback second */
-          if ( tim_dev->callbacks->edge ) {
-            ( *tim_dev->callbacks->edge )( ( uint32_t )tim_dev, tim_dev->context, j, edge_count );
-          }
+          edge_event = true;
         } else {
-          /* Call the edge callback first */
-          if ( tim_dev->callbacks->edge ) {
-            ( *tim_dev->callbacks->edge )( ( uint32_t )tim_dev, tim_dev->context, j, edge_count );
-          }
-          /* Call the overflow callback second */
-          if ( tim_dev->callbacks->overflow ) {
-            ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev, tim_dev->context, j, overflow_count );
-          }
+          edge_event = false;
+          edge_count = 0;
         }
-      } else if ( overflow_event && tim_dev->callbacks->overflow ) {
-        ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev, tim_dev->context, j, overflow_count );
-      } else if ( edge_event && tim_dev->callbacks->edge ) {
-        ( *tim_dev->callbacks->edge )( ( uint32_t )tim_dev, tim_dev->context, j, edge_count );
-      }
-    }
-  }
+
+        if ( !tim_dev->callbacks ) {
+          /* No callbacks registered, we're done with this channel */
+          continue;
+        }
+
+        /* Generate the appropriate callbacks */
+        if ( overflow_event & edge_event ) {
+          /*
+           * When both edge and overflow happen in the same interrupt, we
+           * need a heuristic to determine the order of the edge and overflow
+           * events so that the callbacks happen in the right order.  If we
+           * get the order wrong, our pulse width calculations could be off by up
+           * to ARR ticks.  That could be bad.
+           *
+           * Heuristic: If the edge_count is < 16 ticks above zero then we assume the
+           *            edge happened just after the overflow.
+           */
+
+          if ( edge_count < 16 ) {
+            /* Call the overflow callback first */
+            if ( tim_dev->callbacks->overflow ) {
+              ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev,
+                                                 tim_dev->context,
+                                                 j,
+                                                 overflow_count );
+            }
+            /* Call the edge callback second */
+            if ( tim_dev->callbacks->edge ) {
+              ( *tim_dev->callbacks->edge )( ( uint32_t )tim_dev,
+                                             tim_dev->context,
+                                             j,
+                                             edge_count );
+            }
+          } else {
+            /* Call the edge callback first */
+            if ( tim_dev->callbacks->edge ) {
+              ( *tim_dev->callbacks->edge )( ( uint32_t )tim_dev,
+                                             tim_dev->context,
+                                             j,
+                                             edge_count );
+            }
+            /* Call the overflow callback second */
+            if ( tim_dev->callbacks->overflow ) {
+              ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev,
+                                                 tim_dev->context,
+                                                 j,
+                                                 overflow_count );
+            }
+          }
+        } else if ( overflow_event && tim_dev->callbacks->overflow ) {
+          ( *tim_dev->callbacks->overflow )( ( uint32_t )tim_dev,
+                                             tim_dev->context,
+                                             j,
+                                             overflow_count );
+        } else if ( edge_event && tim_dev->callbacks->edge ) {
+          ( *tim_dev->callbacks->edge )( ( uint32_t )tim_dev,
+                                         tim_dev->context,
+                                         j,
+                                         edge_count );
+        }
+
+      } // for ( uint8_t j = 0; j < tim_dev->num_channels; j++ )
+    } // if ( tim_dev->type == TIMDEV_TYPE_TIMEBASE )
+  } // for ( uint8_t i = 0; i < uvos_tim_num_devs; i++ )
 }
+
+
+
+
+
+//********************************************************************************************GLS
 
 /* Bind Interrupt Handlers
  *

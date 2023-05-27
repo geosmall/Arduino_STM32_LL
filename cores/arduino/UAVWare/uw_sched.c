@@ -1,36 +1,28 @@
 #include <uvos.h>
+#include "uw_sched.h"
 
-#ifdef UVOS_INCLUDE_SCHED
-
-#include <uvos_sched_priv.h>
-#include <uvos_tim_priv.h>
-
-#if 0 // GLS
-
-// #include <uvos_sched_priv.h>
-
-static void UVOS_SCHED_tick_handler( uint32_t tim_id, uint32_t context, uint8_t chan_idx, uint16_t count );
+static void UW_sched_tick_handler( uint32_t tim_id, uint32_t context, uint8_t chan_idx, uint16_t count );
 
 /* The array of tasks
  * Check array size in scheduler header file */
-static struct uvos_sched_task sch_tasks_g[SCH_MAX_TASKS];
+static struct UW_sched_task sched_tasks_g[ SCH_MAX_TASKS ];
 
-/* Tick count and error flag */
+// Default value for pTask (no task at this location)
+#define SCH_NULL_PTR ( ( void (*) ( void ) ) 0 )
+
+/* Tick count and error flag, accessed from both interrupt and userland contexts */
 static volatile uint32_t sched_tick_count_g = 0;
 static volatile bool sched_overrun_flag_g = false;
 
-/* Scheduler timer handle */
-static uint32_t uvos_sched_tim_id     = 0;
-static const TIM_TypeDef *uvos_sched_timer_g;
-
+/* Callback struct, called from UVOS_TIM timer innterupt */
 static const struct uvos_tim_callbacks uvos_sched_tim_callbacks = {
-  .overflow = UVOS_SCHED_tick_handler,
-  .edge     = NULL,
+	.overflow = UW_sched_tick_handler,
+	.edge     = NULL,
 };
 
 /*----------------------------------------------------------------------------*-
 
-  sch_tick_handler()
+  UW_sched_tick_handler()
 
   This is the scheduler ISR callback.  It is called at a rate
   determined by the timer settings in the UVOS_TIME_init() function
@@ -58,71 +50,51 @@ static const struct uvos_tim_callbacks uvos_sched_tim_callbacks = {
      None.
 
 -*----------------------------------------------------------------------------*/
-static void UVOS_SCHED_tick_handler( uint32_t tim_id, uint32_t context, uint8_t chan_idx, uint16_t count )
+static void UW_sched_tick_handler( uint32_t tim_id, uint32_t context, uint8_t chan_idx, uint16_t count )
 {
 
-  // Increment tick count
-  sched_tick_count_g++;
+	// Increment tick count
+	sched_tick_count_g++;
 
 // #define UVOS_COM_DEBUG_SCHED_TICK
 #ifdef UVOS_COM_DEBUG_SCHED_TICK
-  UVOS_LED_Toggle( UVOS_LED_HEARTBEAT );
-  UVOS_COM_SendChar( UVOS_COM_DEBUG, sched_tick_count_g );
+	UVOS_LED_Toggle( UVOS_LED_HEARTBEAT );
+	UVOS_COM_SendChar( UVOS_COM_DEBUG, sched_tick_count_g );
 #endif // UVOS_COM_DEBUG_SCHED_TICK
 
-  // check against limit
-  if ( sched_tick_count_g > SCH_TICK_COUNT_LIMIT ) {
-    // One or more tasks has taken too long to complete
-    sched_overrun_flag_g = true;
-  }
+	// check against limit
+	if ( sched_tick_count_g > SCH_TICK_COUNT_LIMIT ) {
+		// One or more tasks has taken too long to complete
+		sched_overrun_flag_g = true;
+	}
 }
 
-#endif // GLS
-
-static const struct uvos_sched_cfg *sched_cfg;
-
-/* Scheduler timer handle */
-static uint32_t uvos_sched_tim_id     = 0;
-
-/*----------------------------------------------------------------------------*/
-
-int32_t UVOS_SCHED_Init( const struct uvos_sched_cfg *cfg )
+void UW_sched_init( void )
 {
-  /* Initialize the sched timebase tim device */
-  if ( UVOS_TIM_InitDevice( &uvos_sched_tim_id, TIMDEV_TYPE_TIMEBASE, cfg->channels, cfg->num_channels, NULL, 0 ) ) {
-    return -1;
-  }
+	/* Initialaize all task entries to null */
+	for ( uint32_t Task_id = 0; Task_id < SCH_MAX_TASKS; Task_id++ ) {
+		sched_tasks_g[Task_id].pTask = SCH_NULL_PTR; // Set pTask to "null pointer"
+	}
 
-  /* Store away the requested configuration */
-  sched_cfg = cfg;
-
-  return 0;
+	UVOS_SCHED_RegisterCallbacks( &uvos_sched_tim_callbacks );
 }
 
-void UVOS_SCHED_RegisterCallbacks( const struct uvos_tim_callbacks *callbacks )
+void UW_sched_start( void )
 {
-  UVOS_TIM_SetCallbacks( uvos_sched_tim_id, callbacks );
+	sched_tick_count_g = 0;
+	sched_overrun_flag_g = false;
+
+	UVOS_SCHED_Start();
 }
 
-void UVOS_SCHED_Start( void )
+void UW_sched_stop( void )
 {
-  const struct uvos_tim_channel *chan = &sched_cfg->channels[ 0 ];
-
-  LL_TIM_EnableIT_UPDATE( chan->timer );
+	UVOS_SCHED_Stop();
 }
-
-void UVOS_SCHED_Stop( void )
-{
-  const struct uvos_tim_channel *chan = &sched_cfg->channels[ 0 ];
-
-  LL_TIM_DisableIT_UPDATE( chan->timer );
-}
-
-#if 0 // GLS
 
 /*----------------------------------------------------------------------------*-
 
-  UVOS_SCHED_dispatch_tasks()
+  UW_sched_dispatch_tasks()
 
   This is the 'dispatcher' function.  When a task (function)
   is due to run, SCH_Dispatch_Tasks() will run it.
@@ -134,7 +106,7 @@ void UVOS_SCHED_Stop( void )
      None.
 
   LONG-TERM DATA:
-     sch_tasks_g (W)
+     sched_tasks_g (W)
      sched_tick_count_g (W)
 
   MCU HARDWARE:
@@ -153,7 +125,7 @@ void UVOS_SCHED_Stop( void )
      sched_overrun_flag_g.
 
 -*----------------------------------------------------------------------------*/
-int32_t UVOS_SCHED_dispatch_tasks( void )
+int32_t UW_sched_dispatch_tasks( void )
 {
   __disable_irq();
   uint32_t update_required = ( sched_tick_count_g > 0 ); // Check tick count
@@ -168,12 +140,12 @@ int32_t UVOS_SCHED_dispatch_tasks( void )
     // Go through the task array
     for ( uint32_t Task_id = 0; Task_id < SCH_MAX_TASKS; Task_id++ ) {
       // Check if there is a task at this location
-      if ( sch_tasks_g[Task_id].pTask != SCH_NULL_PTR ) {
-        if ( --sch_tasks_g[Task_id].Delay == 0 ) {
-          ( *sch_tasks_g[Task_id].pTask )(); // Run the task
+      if ( sched_tasks_g[Task_id].pTask != SCH_NULL_PTR ) {
+        if ( --sched_tasks_g[Task_id].Delay == 0 ) {
+          ( *sched_tasks_g[Task_id].pTask )(); // Run the task
 
           // All tasks are periodic: schedule task to run again
-          sch_tasks_g[Task_id].Delay = sch_tasks_g[Task_id].Period;
+          sched_tasks_g[Task_id].Delay = sched_tasks_g[Task_id].Period;
         }
       }
     }
@@ -197,7 +169,7 @@ int32_t UVOS_SCHED_dispatch_tasks( void )
 
 /*----------------------------------------------------------------------------*-
 
-  UVOS_SCHED_add_task()
+  UW_sched_add_task()
 
   Adds a task (function) to the schedule.
   The task will be released periodically by the scheduler.
@@ -213,7 +185,7 @@ int32_t UVOS_SCHED_dispatch_tasks( void )
      PERIOD : Task period (in ticks).  Must be > 0.
 
   LONG-TERM DATA:
-     sch_tasks_g (W)
+     sched_tasks_g (W)
 
   MCU HARDWARE:
      None.
@@ -234,12 +206,12 @@ int32_t UVOS_SCHED_dispatch_tasks( void )
      Success or failure.
 
 -*----------------------------------------------------------------------------*/
-int32_t UVOS_SCHED_add_task( void ( *pTask )(), const uint32_t DELAY, const uint32_t PERIOD )
+int32_t UW_sched_add_task( void ( *pTask )(), const uint32_t DELAY, const uint32_t PERIOD )
 {
   uint32_t Task_id = 0;
 
   // First find a gap in the array (if there is one)
-  while ( ( sch_tasks_g[Task_id].pTask != SCH_NULL_PTR )
+  while ( ( sched_tasks_g[Task_id].pTask != SCH_NULL_PTR )
           && ( Task_id < SCH_MAX_TASKS ) ) {
     Task_id++;
   }
@@ -258,15 +230,10 @@ int32_t UVOS_SCHED_add_task( void ( *pTask )(), const uint32_t DELAY, const uint
 
   // If we're here, there is a space in the task array
   // and the task to be added is periodic
-  sch_tasks_g[Task_id].pTask  = pTask;
+  sched_tasks_g[Task_id].pTask  = pTask;
 
-  sch_tasks_g[Task_id].Delay  = DELAY + 1;
-  sch_tasks_g[Task_id].Period = PERIOD;
+  sched_tasks_g[Task_id].Delay  = DELAY + 1;
+  sched_tasks_g[Task_id].Period = PERIOD;
 
   return EXIT_SUCCESS;
 }
-
-#endif // GLS
-
-#endif // UVOS_INCLUDE_SCHED 
-

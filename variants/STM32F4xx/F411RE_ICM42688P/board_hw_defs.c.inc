@@ -677,7 +677,7 @@ static const struct uvos_tim_clock_cfg tim_11_cfg = {
 };
 
 /**
- * Pios servo configuration structures
+ * UVOS servo configuration structures
  * Using TIM1, TIM3
  *      o1  |   PA8    |  TIM1_CH1   |   AF01   |
  *      o2  |   PA9    |  TIM1_CH2   |   AF01   |  USART1_TX
@@ -797,6 +797,26 @@ const struct uvos_servo_cfg uvos_servo_cfg_out = {
   .channels     = uvos_tim_servoport_all_pins,
   .num_channels = UVOS_SERVOPORT_ALL_PINS_PWMOUT,
 };
+
+/**
+ * UVOS sched configuration structures
+ * Using TIM11
+ */
+#include <uvos_sched_priv.h>
+static const struct uvos_tim_channel uvos_tim_sched_timer_only[] = {
+  {
+    .timer = TIM11,
+    .timer_chan = 0,
+    .pin   = { 0 },
+  },
+};
+
+const struct uvos_sched_cfg uvos_sched_cfg_out = {
+  .tim_base_init = tim_11_time_base,
+  .channels      = uvos_tim_sched_timer_only,
+  .num_channels  = 1,
+};
+
 
 #if defined(UVOS_INCLUDE_RCVR)
 

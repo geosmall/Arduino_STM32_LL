@@ -251,6 +251,14 @@ int32_t UVOS_Board_Init( void )
   UVOS_RTC_Init( &uvos_rtc_main_cfg );
 #endif
 
+  /* Set up scheduler timer */
+  UVOS_TIM_InitClock( &tim_11_cfg );
+
+#if defined( UVOS_INCLUDE_SCHED )
+  /* Set up scheduler */
+  UVOS_SCHED_Init( &uvos_sched_cfg_out );
+#endif // defined( UVOS_INCLUDE_SCHED )
+
   /* Set up pulse timers */
   UVOS_TIM_InitClock( &tim_1_cfg );
   // UVOS_TIM_InitClock( &tim_2_cfg );
@@ -260,19 +268,17 @@ int32_t UVOS_Board_Init( void )
   // UVOS_TIM_InitClock( &tim_10_cfg );
   // UVOS_TIM_InitClock( &tim_11_cfg );
 
-  /* Set up scheduler timer */
-  UVOS_TIM_InitClock( &tim_11_cfg );
+#if !defined( UVOS_ENABLE_DEBUG_PINS )
+  /* uvos_servo_cfg points to the correct configuration based on input port settings */
+  UVOS_Servo_Init( &uvos_servo_cfg_out );
+#else
+  UVOS_DEBUG_Init( uvos_tim_servoport_all_pins, NELEMENTS( uvos_tim_servoport_all_pins ) );
+#endif // !defined( UVOS_ENABLE_DEBUG_PINS )
 
 #if defined( UVOS_INCLUDE_IBUS )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
-#if !defined( UVOS_ENABLE_DEBUG_PINS )
-  // uvos_servo_cfg points to the correct configuration based on input port settings
-  UVOS_Servo_Init( &uvos_servo_cfg_out );
-#else
-  UVOS_DEBUG_Init( uvos_tim_servoport_all_pins, NELEMENTS( uvos_tim_servoport_all_pins ) );
-#endif // !defined( UVOS_ENABLE_DEBUG_PINS )
 
   if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
 #if !defined( SKIP_MPU_EXISTS_CHECK )
@@ -280,8 +286,5 @@ int32_t UVOS_Board_Init( void )
 #endif // !defined( SKIP_MPU_EXISTS_ASSERT )
   }
 
-  UVOS_SCHED_init( tim_11_cfg.timer );
-
   return 0;
-
 }

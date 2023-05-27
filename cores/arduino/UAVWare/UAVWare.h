@@ -9,6 +9,7 @@
 #include "uw_led.h"
 #include "uw_mpu.h"
 #include "uw_receiver.h"
+#include "uw_sched.h"
 #include "uw_time.h"
 
 

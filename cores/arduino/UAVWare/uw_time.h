@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 /* Main Functions */
+extern uint32_t millis( void );
 extern uint32_t micros( void );
 extern void UW_time_delay_us( uint32_t uSec );
 extern void UW_time_delay_ms( uint32_t mSec );

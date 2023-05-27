@@ -197,12 +197,12 @@ static int wait_ready ( /* 1:Ready, 0:Timeout */
   uint32_t tick_elapsed;
 
   /* Init tick_start for timeout management */
-  tick_start =  UVOS_SYS_GetTick();
+  tick_start =  UVOS_SYS_GetCurrentMillis();
 
   do {
     d = xchg_spi( 0xFF );
     /* This loop takes a time. Insert rot_rdq() here for multitask envilonment. */
-    tick_elapsed = UVOS_SYS_GetTick() - tick_start;
+    tick_elapsed = UVOS_SYS_GetCurrentMillis() - tick_start;
   } while ( d != 0xFF && ( tick_elapsed < wait_time_ms ) ); /* Wait for card goes ready or timeout */
 
   return ( d == 0xFF ) ? 1 : 0;

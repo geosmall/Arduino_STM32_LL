@@ -12,7 +12,7 @@ void SysTick_Handler( void );
 #define MEM32(addr) (*((volatile uint32_t *)(addr)))
 
 static volatile uint32_t sys_tick_count_g = 0;
-// static volatile uint32_t sched_tick_count_g = 0;
+static volatile uint32_t timeout_tick_counter_g = 0;
 
 void noUserSystickCallback() {}
 
@@ -21,16 +21,66 @@ void UserSystickCallback() __attribute__( ( weak, alias( "noUserSystickCallback"
 void SysTick_Handler( void )
 {
   sys_tick_count_g++;
-  UserSystickCallback();
+  if ( timeout_tick_counter_g ) {
+    timeout_tick_counter_g--;
+  }
+  // UserSystickCallback();
+}
+
+/**
+  * @brief  Function called wto read the current millisecond
+  * @param  None
+  * @retval None
+  */
+uint32_t UVOS_SYS_GetCurrentMillis(void)
+{
+  return sys_tick_count_g;
+}
+
+/**
+  * @brief  Function called to read the current micro second
+  * @param  None
+  * @retval None
+  */
+uint32_t UVOS_SYS_GetCurrentMicros(void)
+{
+  /* Ensure COUNTFLAG is reset by reading SysTick control and status register */
+  LL_SYSTICK_IsActiveCounterFlag();
+  uint32_t m = UVOS_SYS_GetCurrentMillis();
+  const uint32_t tms = SysTick->LOAD + 1;
+  __IO uint32_t u = tms - SysTick->VAL;
+  if (LL_SYSTICK_IsActiveCounterFlag()) {
+    m = UVOS_SYS_GetCurrentMillis();
+    u = tms - SysTick->VAL;
+  }
+  return (m * 1000 + (u * 1000) / tms);
 }
 
 /**
   * @brief Provides a tick value in millisecond.
   * @retval tick value
   */
-uint32_t UVOS_SYS_GetTick( void )
+// uint32_t UVOS_SYS_GetTick( void )
+// {
+//   return sys_tick_count_g;
+// }
+
+/**
+  * @brief Set a timeout tick value in millisecond.
+  * @retval tick value
+  */
+void UVOS_SYS_SetTimeoutTickCount( uint32_t ticks_Ms )
 {
-  return sys_tick_count_g;
+  timeout_tick_counter_g = ticks_Ms;
+}
+
+/**
+  * @brief Set a timeout tick value in millisecond.
+  * @retval tick value
+  */
+bool UVOS_SYS_IsTimedOut( void )
+{
+  return ( timeout_tick_counter_g ? false : true );
 }
 
 /**
@@ -55,7 +105,7 @@ void UVOS_SYS_Init( void )
   /* Init the delay system */
   UVOS_DELAY_Init();
 
-  /* Turn on the SysTick periodic interrupt */  
+  /* Turn on the SysTick periodic interrupt */
   LL_SYSTICK_EnableIT();
 
   /*

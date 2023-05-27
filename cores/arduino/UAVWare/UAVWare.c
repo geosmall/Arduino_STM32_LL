@@ -2,7 +2,6 @@
 
 int UAVWare_init( void )
 {
-
   /* Brings up System using CMSIS functions, initializes periph clock, gpio pins. */
   UVOS_SYS_Init();
 
@@ -20,6 +19,9 @@ int UAVWare_init( void )
 
   UW_fs_init();
   UW_act_init();
+  UW_sched_init();
+
+  UW_sched_start();
 
   return 0;
 }

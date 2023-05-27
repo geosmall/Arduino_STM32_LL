@@ -3,7 +3,12 @@
 /* Main Functions */
 uint32_t micros( void )
 {
-  return UVOS_DELAY_GetuS();
+  return UVOS_SYS_GetCurrentMicros();
+}
+
+uint32_t millis( void )
+{
+  return UVOS_SYS_GetCurrentMillis();
 }
 
 void UW_time_delay_us( uint32_t uSec )

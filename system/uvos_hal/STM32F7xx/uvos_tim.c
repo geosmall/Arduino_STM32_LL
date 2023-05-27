@@ -174,7 +174,7 @@ out_fail:
   return -1;
 }
 
-int32_t UVOS_TIM_InitChannels( uint32_t *tim_id, const struct uvos_tim_channel *channels, uint8_t num_channels, const struct uvos_tim_callbacks *callbacks, uint32_t context )
+int32_t UVOS_TIM_InitDevice( uint32_t *tim_id, const struct uvos_tim_channel *channels, uint8_t num_channels, const struct uvos_tim_callbacks *callbacks, uint32_t context )
 {
   UVOS_Assert( channels );
   UVOS_Assert( num_channels );

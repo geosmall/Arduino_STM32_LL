@@ -280,7 +280,7 @@ int32_t UVOS_Board_Init( void )
 #endif // !defined( SKIP_MPU_EXISTS_ASSERT )
   }
 
-  UVOS_SCHED_init( tim_11_cfg.timer );
+  UVOS_SCHED_Init( tim_11_cfg.timer );
 
   return 0;
 
