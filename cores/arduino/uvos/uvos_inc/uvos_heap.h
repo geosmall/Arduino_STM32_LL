@@ -1,6 +1,8 @@
 #ifndef UVOS_HEAP_H
 #define UVOS_HEAP_H
 
+// Inspired by https://github.com/TauLabs/TauLabs
+
 #include <stdlib.h>		/* size_t */
 #include <stdbool.h>		/* bool */
 

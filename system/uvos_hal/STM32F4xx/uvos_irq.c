@@ -1,6 +1,8 @@
+// Inspired by https://github.com/TauLabs/TauLabs
+
 #include "uvos.h"
 
-#ifdef UVOS_INCLUDE_IRQ
+#if defined(UVOS_INCLUDE_IRQ)
 
 /* Private Function Prototypes */
 
@@ -33,10 +35,10 @@ int32_t UVOS_IRQ_Disable( void )
 }
 
 /**
- * Enables all interrupts (nested)
- * \return < 0 on errors
- * \return -1 on nesting errors (UVOS_IRQ_Disable() hasn't been called before)
- */
+* Enables all interrupts (nested)
+* \return < 0 on errors
+* \return -1 on nesting errors (UVOS_IRQ_Disable() hasn't been called before)
+*/
 int32_t UVOS_IRQ_Enable( void )
 {
   /* Check for nesting error */
@@ -50,7 +52,7 @@ int32_t UVOS_IRQ_Enable( void )
 
   /* Set back previous priority once nested level reached 0 again */
   if ( nested_ctr == 0 ) {
-    __asm volatile ( "   msr primask, %0\n" ::"r" ( prev_primask )
+    __asm volatile ( "   msr primask, %0\n" :: "r" ( prev_primask )
                    );
   }
 
@@ -58,4 +60,9 @@ int32_t UVOS_IRQ_Enable( void )
   return 0;
 }
 
-#endif /* UVOS_INCLUDE_IRQ */
+bool UVOS_IRQ_InISR( void )
+{
+  return ( __get_IPSR() & 0xff ) != 0;
+}
+
+#endif
