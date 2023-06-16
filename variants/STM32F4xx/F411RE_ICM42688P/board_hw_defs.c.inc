@@ -564,21 +564,21 @@ void UVOS_RTC_IRQ_Handler( void )
 #include "uvos_tim_priv.h"
 
 static const LL_TIM_InitTypeDef tim_1_8_9_10_time_base = {
-  .Prescaler         = ( UVOS_PERIPHERAL_APB2_CLOCK / 1000000 ) - 1,
+  .Prescaler         = ( UVOS_PERIPHERAL_APB2_TIMER_CLOCK / 1000000 ) - 1,
   .CounterMode       = LL_TIM_COUNTERMODE_UP,
   .Autoreload        = ( ( 1000000 / UVOS_SERVO_UPDATE_HZ ) - 1 ),
   .ClockDivision     = LL_TIM_CLOCKDIVISION_DIV1,
   .RepetitionCounter = 0x0000,
 };
 static const LL_TIM_InitTypeDef tim_2_3_4_5_time_base = {
-  .Prescaler         = ( UVOS_PERIPHERAL_APB1_CLOCK / 1000000 ) - 1,
+  .Prescaler         = ( UVOS_PERIPHERAL_APB1_TIMER_CLOCK / 1000000 ) - 1,
   .CounterMode       = LL_TIM_COUNTERMODE_UP,
   .Autoreload        = ( ( 1000000 / UVOS_SERVO_UPDATE_HZ ) - 1 ),
   .ClockDivision     = LL_TIM_CLOCKDIVISION_DIV1,
   .RepetitionCounter = 0x0000,
 };
 static const LL_TIM_InitTypeDef tim_11_time_base = {
-  .Prescaler         = ( UVOS_PERIPHERAL_APB2_CLOCK / 1000000 ) - 1,
+  .Prescaler         = ( UVOS_PERIPHERAL_APB2_TIMER_CLOCK / 1000000 ) - 1,
   .CounterMode       = LL_TIM_COUNTERMODE_UP,
   .Autoreload        = ( ( 1000000 / UVOS_SCHED_UPDATE_HZ ) - 1 ),
   .ClockDivision     = LL_TIM_CLOCKDIVISION_DIV1,

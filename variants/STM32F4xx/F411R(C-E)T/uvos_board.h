@@ -179,27 +179,28 @@ extern uint32_t uvos_packet_handler;
 // #define UVOS_PERIPHERAL_CLOCK
 
 #define UVOS_SYSCLK 96000000
-// Peripherals that belongs to APB1 are:
-// DAC      |PWR        |CAN1,2
+
+// Peripherals that belongs to APB1 (PCLK1):
+// DAC        |PWR          |CAN1,2
 // I2C1,2,3   |UART4,5      |USART3,2
 // I2S3Ext    |SPI3/I2S3    |SPI2/I2S2
-// I2S2Ext    |IWDG       |WWDG
+// I2S2Ext    |IWDG         |WWDG
 // RTC/BKP reg
 // TIM2,3,4,5,6,7,12,13,14
-
+//
 // Calculated as SYSCLK / APBPresc * (APBPre == 1 ? 1 : 2)
-// Default APB1 Prescaler = 2
-#define UVOS_PERIPHERAL_APB1_CLOCK   UVOS_SYSCLK
+// Default APB1 Prescaler = 2, APB1 Timer clock x2 multiplier
+#define UVOS_PERIPHERAL_APB1_CLOCK          (UVOS_SYSCLK / 2)
+#define UVOS_PERIPHERAL_APB1_TIMER_CLOCK     UVOS_SYSCLK
 
-// Peripherals belonging to APB2
-// SDIO     |EXTI       |SYSCFG     |SPI1
-// ADC1,2,3
-// USART1,6
+// Peripherals belonging to APB2 (PCLK2):
+// SDIO       |EXTI         |SYSCFG
+// SPI1       |ADC1,2,3     |USART1,6
 // TIM1,8,9,10,11
 //
-// Default APB2 Prescaler = 1
-//
-#define UVOS_PERIPHERAL_APB2_CLOCK   UVOS_SYSCLK
+// Default APB2 Prescaler = 1, APB1 Timer clock x1 multiplier
+#define UVOS_PERIPHERAL_APB2_CLOCK           UVOS_SYSCLK
+#define UVOS_PERIPHERAL_APB2_TIMER_CLOCK     UVOS_SYSCLK
 
 // -------------------------
 // Interrupt Priorities

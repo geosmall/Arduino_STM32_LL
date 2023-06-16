@@ -228,9 +228,9 @@ void UVOS_Servo_SetHz( const uint16_t *speeds, const uint32_t *clock, uint8_t ba
            timer == TIM9 ||
            timer == TIM10 ||
            timer == TIM11 ) {
-        TIM_TimeBaseStructure.Prescaler = ( UVOS_PERIPHERAL_APB2_CLOCK / new_clock ) - 1;
+        TIM_TimeBaseStructure.Prescaler = ( UVOS_PERIPHERAL_APB2_TIMER_CLOCK / new_clock ) - 1;
       } else {
-        TIM_TimeBaseStructure.Prescaler = ( UVOS_PERIPHERAL_APB1_CLOCK / new_clock ) - 1;
+        TIM_TimeBaseStructure.Prescaler = ( UVOS_PERIPHERAL_APB1_TIMER_CLOCK / new_clock ) - 1;
       }
       TIM_TimeBaseStructure.Autoreload = ( ( new_clock / speeds[ i ] ) - 1 );
       // TIM_TimeBaseInit( ( TIM_TypeDef * )timer, &TIM_TimeBaseStructure );
