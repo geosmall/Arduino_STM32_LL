@@ -198,56 +198,13 @@ out_fail:
   return -1;
 }
 
-#if 0 // GLS
-
-/**
- * (Re-)initialises SPI peripheral clock rate
- *
- * \param[in] spi SPI number (0 or 1)
- * \param[in] spi_prescaler configures the SPI speed:
- * <UL>
- *   <LI>UVOS_SPI_PRESCALER_2: sets clock rate 27.7~ nS @ 72 MHz (36 MBit/s) (only supported for spi==0, spi1 uses 4 instead)
- *   <LI>UVOS_SPI_PRESCALER_4: sets clock rate 55.5~ nS @ 72 MHz (18 MBit/s)
- *   <LI>UVOS_SPI_PRESCALER_8: sets clock rate 111.1~ nS @ 72 MHz (9 MBit/s)
- *   <LI>UVOS_SPI_PRESCALER_16: sets clock rate 222.2~ nS @ 72 MHz (4.5 MBit/s)
- *   <LI>UVOS_SPI_PRESCALER_32: sets clock rate 444.4~ nS @ 72 MHz (2.25 MBit/s)
- *   <LI>UVOS_SPI_PRESCALER_64: sets clock rate 888.8~ nS @ 72 MHz (1.125 MBit/s)
- *   <LI>UVOS_SPI_PRESCALER_128: sets clock rate 1.7~ nS @ 72 MHz (0.562 MBit/s)
- *   <LI>UVOS_SPI_PRESCALER_256: sets clock rate 3.5~ nS @ 72 MHz (0.281 MBit/s)
- * </UL>
- * \return 0 if no error
- * \return -1 if disabled SPI port selected
- * \return -3 if invalid spi_prescaler selected
- */
-int32_t UVOS_SPI_SetClockSpeed( uint32_t spi_id, SPIPrescalerTypeDef spi_prescaler )
-{
-  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
-
-  bool valid = UVOS_SPI_validate( spi_dev );
-
-  UVOS_Assert( valid )
-
-  /* Validate selected prescaler */
-  if ( spi_prescaler >= 8 ) {
-    return -3;
-  }
-
-  /* Adjust the prescaler for the peripheral's clock */
-  uint32_t BaudRate = ( ( uint32_t )spi_prescaler & 7 ) << 3;
-
-  /* Write the new prescaler value */
-  LL_SPI_SetBaudRatePrescaler( spi_dev->cfg->regs, BaudRate );
-
-  UVOS_SPI_TransferByte( spi_id, 0xFF );
-  return 0;
-}
-
-#else // GLS
+/* SPI registers Masks */
+#define SPI_BAUDRATE_CLEAR_MASK   ( SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 )
 
 /**
  * (Re-)initialise SPI peripheral clock rate
  *
- * \param[in] spi SPI number (0 or 1)
+ * \param[in] spi SPI device id handle
  * \param[in] spi_prescaler configures the SPI speed
  * \return 0 if no error
  * \return -1 if disabled SPI port selected
@@ -261,27 +218,100 @@ int32_t UVOS_SPI_SetClockSpeed( uint32_t spi_id, SPIPrescalerTypeDef spi_prescal
 
   UVOS_Assert( valid )
 
-  LL_SPI_InitTypeDef SPI_InitStructure;
+  // LL_SPI_InitTypeDef SPI_InitStructure;
 
   /* Validate selected prescaler */
   if ( !( IS_SPI_PRESCALER( spi_prescaler ) ) ) {
-    return -3;
+    return -1;
   }
 
   /* Start with a copy of the default configuration for the peripheral */
-  SPI_InitStructure = spi_dev->cfg->init;
+  // SPI_InitStructure = spi_dev->cfg->init;
 
   /* Adjust the prescaler */
-  SPI_InitStructure.BaudRate = spi_prescaler;
+  // SPI_InitStructure.BaudRate = spi_prescaler;
+
+  LL_SPI_Disable( spi_dev->cfg->regs );
 
   /* Write back the new configuration */
-  LL_SPI_Init( spi_dev->cfg->regs, &SPI_InitStructure );
+  // LL_SPI_Init( spi_dev->cfg->regs, &SPI_InitStructure );
+  MODIFY_REG( spi_dev->cfg->regs->CR1, SPI_BAUDRATE_CLEAR_MASK, spi_prescaler );
+
+  LL_SPI_Enable( spi_dev->cfg->regs );
 
   UVOS_SPI_TransferByte( spi_id, 0xFF );
   return 0;
 }
 
-#endif // GLS
+/**
+ * (Re-)initialise SPI peripheral clock rate
+ *
+ * \param[in] spi SPI device id handle
+ * \param[in] spi_prescaler configures the SPI speed
+ * \return 0 if no error
+ * \return -1 if disabled SPI port selected
+ * \return -3 if invalid spi_prescaler selected
+ */
+int32_t UVOS_SPI_SetClockSpeedHz( uint32_t spi_id, uint32_t spi_speed )
+{
+  struct uvos_spi_dev *spi_dev = ( struct uvos_spi_dev * )spi_id;
+
+  bool valid = UVOS_SPI_validate( spi_dev );
+  UVOS_Assert( valid );
+
+  // LL_SPI_InitTypeDef SPI_InitStructure;
+
+  SPIPrescalerTypeDef spi_prescaler;
+
+  //SPI clock is different depending on the bus
+  uint32_t spiBusClock = 0;
+
+  if ( spi_dev->cfg->regs == SPI1 ) {
+    spiBusClock = UVOS_PERIPHERAL_APB2_CLOCK;
+  } else {
+    spiBusClock = UVOS_PERIPHERAL_APB1_CLOCK;
+  }
+
+  //The needed prescaler for desired speed
+  float desiredPrescaler = ( float ) spiBusClock / spi_speed;
+
+  //Choosing the existing prescaler nearest the desiredPrescaler
+  if ( desiredPrescaler <= 2 )
+    spi_prescaler = UVOS_SPI_PRESCALER_2;
+  else if ( desiredPrescaler <= 4 )
+    spi_prescaler = UVOS_SPI_PRESCALER_4;
+  else if ( desiredPrescaler <= 8 )
+    spi_prescaler = UVOS_SPI_PRESCALER_8;
+  else if ( desiredPrescaler <= 16 )
+    spi_prescaler = UVOS_SPI_PRESCALER_16;
+  else if ( desiredPrescaler <= 32 )
+    spi_prescaler = UVOS_SPI_PRESCALER_32;
+  else if ( desiredPrescaler <= 64 )
+    spi_prescaler = UVOS_SPI_PRESCALER_64;
+  else if ( desiredPrescaler <= 128 )
+    spi_prescaler = UVOS_SPI_PRESCALER_128;
+  else
+    spi_prescaler = UVOS_SPI_PRESCALER_256;
+
+  /* Start with a copy of the default configuration for the peripheral */
+  // SPI_InitStructure = spi_dev->cfg->init;
+
+  /* Adjust the prescaler */
+  // SPI_InitStructure.BaudRate = spi_prescaler;
+
+  LL_SPI_Disable( spi_dev->cfg->regs );
+
+  /* Write back the new configuration */
+  // LL_SPI_Init( spi_dev->cfg->regs, &SPI_InitStructure );
+  MODIFY_REG( spi_dev->cfg->regs->CR1, SPI_BAUDRATE_CLEAR_MASK, spi_prescaler );
+
+  LL_SPI_Enable( spi_dev->cfg->regs );
+
+  UVOS_SPI_TransferByte( spi_id, 0xFF );
+
+  //return set speed
+  return spiBusClock / spi_prescaler;
+}
 
 /**
  * Claim the SPI bus semaphore.  Calling the SPI functions does not require this

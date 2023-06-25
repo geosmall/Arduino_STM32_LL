@@ -61,6 +61,54 @@ static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
 
 #endif // defined( UVOS_INCLUDE_EXTI )
 
+/**
+ * Configuration for the MPU6000 chip
+ */
+#if defined(UVOS_INCLUDE_MPU6000)
+#include "uvos_mpu6000.h"
+static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
+  .vector = UVOS_MPU6000_IRQHandler,
+  .line = LL_EXTI_LINE_4,
+  .pin = {
+    .gpio = GPIOC,
+    .init = {
+      .Pin   = LL_GPIO_PIN_4,
+      .Mode = LL_GPIO_MODE_INPUT,
+      .Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH,
+      .OutputType = LL_GPIO_OUTPUT_OPENDRAIN,
+      .Pull = LL_GPIO_PULL_NO,
+    },
+  },
+  .irq = {
+    .init = {
+      .NVIC_IRQChannel = EXTI0_IRQn,
+      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
+      .NVIC_IRQChannelSubPriority = 0,
+      .NVIC_IRQChannelCmd = ENABLE,
+    },
+  },
+  .exti = {
+    .init = {
+      .Line_0_31    = LL_EXTI_LINE_4, // matches above GPIO pin
+      .LineCommand  = ENABLE,
+      .Mode         = LL_EXTI_MODE_IT,
+      .Trigger      = LL_EXTI_TRIGGER_RISING,
+    },
+  },
+};
+
+static const struct uvos_mpu60x0_cfg uvos_mpu6000_cfg = {
+  .exti_cfg = &uvos_exti_mpu6000_cfg,
+  .default_samplerate = 666,
+  .interrupt_cfg = UVOS_MPU60X0_INT_CLR_ANYRD,
+  .interrupt_en = UVOS_MPU60X0_INTEN_DATA_RDY,
+  .User_ctl = UVOS_MPU60X0_USERCTL_DIS_I2C,
+  .Pwr_mgmt_clk = UVOS_MPU60X0_PWRMGMT_PLL_Z_CLK,
+  .default_filter = UVOS_MPU60X0_LOWPASS_256_HZ,
+  .orientation = UVOS_MPU60X0_TOP_180DEG
+};
+#endif /* UVOS_INCLUDE_MPU6000 */
+
 static const uvos_mpu_cfg_t uvos_mpu_cfg = {
   .expected_device_id = Invensense_MPU6000,
   // .exti_cfg   = &uvos_exti_mpu_cfg,
@@ -279,10 +327,22 @@ int32_t UVOS_Board_Init( void )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
-  if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
-#if !defined( SKIP_MPU_EXISTS_CHECK )
+  /* Init sensor queue registration */
+  UVOS_SENSORS_Init();
+
+
+  // if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
+//   if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg ) ) {
+// #if !defined( SKIP_MPU_EXISTS_CHECK )
+//     return -4;
+// #endif // !defined( SKIP_MPU_EXISTS_ASSERT )
+  // }
+
+  if ( UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg ) != 0 ) {
     return -4;
-#endif // !defined( SKIP_MPU_EXISTS_ASSERT )
+  }
+  if ( UVOS_MPU6000_Test() != 0 ) {
+    return -5;
   }
 
   return 0;

@@ -1,7 +1,7 @@
+// Inspired by https://github.com/TauLabs/TauLabs
+
 /* Project Includes */
 #include "uvos.h"		/* UVOS_INCLUDE_* */
-
-// Inspired by https://github.com/TauLabs/TauLabs
 
 #include "uvos_heap.h"		/* External API declaration */
 

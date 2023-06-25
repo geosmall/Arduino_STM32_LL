@@ -38,6 +38,7 @@ extern "C" {
 
 /* UVOS Hardware Includes (Common) */
 #include <uvos_heap.h>
+#include <uvos_sensors.h>
 
 /* UVOS board specific feature selection */
 #include "uvos_config.h"
@@ -131,6 +132,10 @@ extern "C" {
 
 #ifdef UVOS_INCLUDE_MPU
 #include <uvos_mpu.h>
+#endif
+
+#if defined(UVOS_INCLUDE_MPU6000)
+#include <uvos_mpu6000.h>
 #endif
 
 #ifdef UVOS_INCLUDE_FS
