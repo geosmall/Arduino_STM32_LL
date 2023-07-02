@@ -60,7 +60,7 @@ Nucleo_64.build.variant_h=variant_{build.board}.h
 Nucleo_64.build.extra_flags=-D{build.product_line} {build.enable_usb} {build.xSerial}
 
 # NUCLEO_F411RE board with MPU6000
-Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K=Nucleo F411RE /w MPU6000
+Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K=Nucleo F411RE /w MPU6000 (no INT)
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K.node="NODE_F411RE,NUCLEO"
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K.upload.maximum_size=524288
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K.upload.maximum_data_size=131072
@@ -73,7 +73,7 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K.build.variant=STM32F4xx/F411RE_MPU6K
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6K.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
 # NUCLEO_F411RE board with MPU6000 using INT
-Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT=Nucleo F411RE /w MPU6000(INT)
+Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT=Nucleo F411RE /w MPU6000 (INT)
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT.node="NODE_F411RE,NUCLEO"
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT.upload.maximum_size=524288
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT.upload.maximum_data_size=131072
@@ -86,7 +86,7 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT.build.variant=STM32F4xx/F411RE_MPU6K_
 Nucleo_64.menu.pnum.NUCLEO_F411RE_MPU6KINT.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
 # NUCLEO_F411RE board with ICM42688P
-Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P=Nucleo F411RE w/ ICM42688P
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P=Nucleo F411RE w/ ICM42688P (no INT)
 Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.node="NODE_F411RE_ICM42688P,NUCLEO"
 Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.upload.maximum_size=524288
 Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.upload.maximum_data_size=131072
