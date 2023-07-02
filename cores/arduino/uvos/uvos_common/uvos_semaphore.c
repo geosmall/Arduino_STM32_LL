@@ -316,8 +316,6 @@ bool UVOS_Semaphore_Give(struct uvos_semaphore *sema)
 	return result;
 }
 
-/* Workaround for simulator version of FreeRTOS. */
-#if !defined(SIM_POSIX)
 /**
  *
  * @brief   Takes binary semaphore from ISR context.
@@ -373,6 +371,5 @@ bool UVOS_Semaphore_Give_FromISR(struct uvos_semaphore *sema, bool *woken)
 
 	return result;
 }
-#endif /* !defined(SIM_POSIX) */
 
 #endif /* defined(UVOS_INCLUDE_IRQ) */
