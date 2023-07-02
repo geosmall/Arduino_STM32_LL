@@ -46,8 +46,6 @@
 /* UVOS sensor interfaces */
 #define UVOS_INCLUDE_MPU
 #define UVOS_INCLUDE_MPU6000
-#define UVOS_MPU_ACCEL
-#define UVOS_MPU6000_SIMPLE_INIT_SEQUENCE
 
 /* UVOS receiver drivers */
 // #define UVOS_INCLUDE_DSM

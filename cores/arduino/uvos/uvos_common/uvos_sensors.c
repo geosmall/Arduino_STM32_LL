@@ -1,59 +1,39 @@
-#include "uvos_sensors.h"
-#include <stddef.h>
+#include <uvos_heap.h>
+#include <uvos_sensors.h>
+#include <string.h>
 
-//! The list of queue handles
-static struct uvos_queue *queues[UVOS_SENSOR_LAST];
-static int32_t max_gyro_rate;
+// private variables
 
-//! Initialize the sensors interface
-int32_t UVOS_SENSORS_Init()
+static UVOS_SENSORS_Instance *sensor_list = 0;
+
+UVOS_SENSORS_Instance *UVOS_SENSORS_Register( const UVOS_SENSORS_Driver *driver, UVOS_SENSORS_TYPE type, uintptr_t context )
 {
-	for (uint32_t i = 0; i < UVOS_SENSOR_LAST; i++)
-		queues[i] = NULL;
+  UVOS_SENSORS_Instance *instance = ( UVOS_SENSORS_Instance * )UVOS_malloc( sizeof( UVOS_SENSORS_Instance ) );
 
-	return 0;
+  instance->driver  = driver;
+  instance->type    = type;
+  instance->context = context;
+  instance->next    = NULL;
+  LL_APPEND( sensor_list, instance );
+  return instance;
 }
 
-//! Register a sensor with the UVOS_SENSORS interface
-int32_t UVOS_SENSORS_Register(enum UVOS_SENSOR_Type type, struct uvos_queue *queue)
+UVOS_SENSORS_Instance *UVOS_SENSORS_GetList()
 {
-	if(queues[type] != NULL)
-		return -1;
-
-	queues[type] = queue;
-
-	return 0;
+  return sensor_list;
 }
 
-//! Checks if a sensor type is registered with the UVOS_SENSORS interface
-bool UVOS_SENSORS_IsRegistered(enum UVOS_SENSOR_Type type)
+UVOS_SENSORS_Instance *UVOS_SENSORS_GetInstanceByType( const UVOS_SENSORS_Instance *previous_instance, UVOS_SENSORS_TYPE type )
 {
-	if(type >= UVOS_SENSOR_LAST)
-		return false;
+  if ( !previous_instance ) {
+    previous_instance = sensor_list;
+  }
+  UVOS_SENSORS_Instance *sensor;
 
-	if(queues[type] != NULL)
-		return true;
-
-	return false;
-}
-
-//! Get the data queue for a sensor type
-struct uvos_queue *UVOS_SENSORS_GetQueue(enum UVOS_SENSOR_Type type)
-{
-	if (type >= UVOS_SENSOR_LAST)
-		return NULL;
-
-	return queues[type];
-}
-
-//! Set the maximum gyro rate in deg/s
-void UVOS_SENSORS_SetMaxGyro(int32_t rate)
-{
-	max_gyro_rate = rate;
-}
-
-//! Get the maximum gyro rate in deg/s
-int32_t UVOS_SENSORS_GetMaxGyro()
-{
-		return max_gyro_rate;
+  LL_FOREACH( ( UVOS_SENSORS_Instance * )previous_instance, sensor ) {
+    if ( sensor->type & type ) {
+      return sensor;
+    }
+  }
+  return NULL;
 }

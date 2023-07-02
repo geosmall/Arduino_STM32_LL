@@ -11,35 +11,33 @@
 
 #if defined(UVOS_INCLUDE_FREERTOS)
 
-struct uvos_queue
-{
-	uintptr_t queue_handle;
+struct uvos_queue {
+  uintptr_t queue_handle;
 };
 
 #elif defined(UVOS_INCLUDE_CHIBIOS)
 
 #include "ch.h"
 
-struct uvos_queue
-{
-	Mailbox mb;
-	MemoryPool mp;
-	void *mpb;
+struct uvos_queue {
+  Mailbox mb;
+  MemoryPool mp;
+  void *mpb;
 };
 
 #else
 
 #include "fifo_buffer.h"
 
-struct uvos_queue
-{
-  uintptr_t queue_handle;
+struct uvos_queue {
   size_t queue_length;
   size_t item_size;
-  t_fifo_buffer queue;
+  t_fifo_buffer fifo;
 };
 
 #endif /* defined(UVOS_INCLUDE_FREERTOS) */
+
+typedef struct uvos_queue *uvos_queue_ptr_t;
 
 /*
  * The following functions implement the concept of a queue usable
@@ -51,11 +49,11 @@ struct uvos_queue
  *
  */
 
-struct uvos_queue *UVOS_Queue_Create(size_t queue_length, size_t item_size);
-void UVOS_Queue_Delete(struct uvos_queue *queuep);
-bool UVOS_Queue_Send(struct uvos_queue *queuep, const void *itemp, uint32_t timeout_ms);
-bool UVOS_Queue_Send_FromISR(struct uvos_queue *queuep, const void *itemp, bool *wokenp);
-bool UVOS_Queue_Receive(struct uvos_queue *queuep, void *itemp, uint32_t timeout_ms);
+struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size );
+void UVOS_Queue_Delete( struct uvos_queue *queuep );
+bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t timeout_ms );
+bool UVOS_Queue_Send_FromISR( struct uvos_queue *queuep, const void *itemp, bool *wokenp );
+bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeout_ms );
 
 #endif /* UVOS_QUEUE_H_ */
 

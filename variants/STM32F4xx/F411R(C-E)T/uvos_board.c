@@ -66,6 +66,7 @@ static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
  */
 #if defined(UVOS_INCLUDE_MPU6000)
 #include "uvos_mpu6000.h"
+#include "uvos_mpu6000_config.h"
 static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
   .vector = UVOS_MPU6000_IRQHandler,
   .line = LL_EXTI_LINE_4,
@@ -81,7 +82,7 @@ static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
   },
   .irq = {
     .init = {
-      .NVIC_IRQChannel = EXTI0_IRQn,
+      .NVIC_IRQChannel = EXTI4_IRQn,
       .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
       .NVIC_IRQChannelSubPriority = 0,
       .NVIC_IRQChannelCmd = ENABLE,
@@ -97,15 +98,24 @@ static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
   },
 };
 
-static const struct uvos_mpu60x0_cfg uvos_mpu6000_cfg = {
-  .exti_cfg = &uvos_exti_mpu6000_cfg,
-  .default_samplerate = 666,
-  .interrupt_cfg = UVOS_MPU60X0_INT_CLR_ANYRD,
-  .interrupt_en = UVOS_MPU60X0_INTEN_DATA_RDY,
-  .User_ctl = UVOS_MPU60X0_USERCTL_DIS_I2C,
-  .Pwr_mgmt_clk = UVOS_MPU60X0_PWRMGMT_PLL_Z_CLK,
-  .default_filter = UVOS_MPU60X0_LOWPASS_256_HZ,
-  .orientation = UVOS_MPU60X0_TOP_180DEG
+static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
+  .exti_cfg   = &uvos_exti_mpu6000_cfg,
+  .Fifo_store = UVOS_MPU6000_FIFO_TEMP_OUT | UVOS_MPU6000_FIFO_GYRO_X_OUT | UVOS_MPU6000_FIFO_GYRO_Y_OUT | UVOS_MPU6000_FIFO_GYRO_Z_OUT,
+  // Clock at 8 khz
+  .Smpl_rate_div_no_dlp = 0,
+  // with dlp on output rate is 1000Hz
+  .Smpl_rate_div_dlp    = 0,
+  .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
+  .interrupt_en   = UVOS_MPU6000_INTEN_DATA_RDY,
+  .User_ctl       = UVOS_MPU6000_USERCTL_DIS_I2C,
+  .Pwr_mgmt_clk   = UVOS_MPU6000_PWRMGMT_PLL_Z_CLK,
+  .accel_range    = UVOS_MPU6000_ACCEL_8G,
+  .gyro_range     = UVOS_MPU6000_SCALE_2000_DEG,
+  .filter         = UVOS_MPU6000_LOWPASS_256_HZ,
+  .orientation    = UVOS_MPU6000_TOP_180DEG,
+  .fast_prescaler = UVOS_SPI_PRESCALER_16,
+  .std_prescaler  = UVOS_SPI_PRESCALER_128,
+  .max_downsample = 20,
 };
 #endif /* UVOS_INCLUDE_MPU6000 */
 
@@ -327,10 +337,6 @@ int32_t UVOS_Board_Init( void )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
-  /* Init sensor queue registration */
-  UVOS_SENSORS_Init();
-
-
   // if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
 //   if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg ) ) {
 // #if !defined( SKIP_MPU_EXISTS_CHECK )
@@ -338,12 +344,11 @@ int32_t UVOS_Board_Init( void )
 // #endif // !defined( SKIP_MPU_EXISTS_ASSERT )
   // }
 
-  if ( UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg ) != 0 ) {
-    return -4;
-  }
-  if ( UVOS_MPU6000_Test() != 0 ) {
-    return -5;
-  }
+#if defined(UVOS_INCLUDE_MPU6000)
+  UVOS_MPU6000_Init(uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg);
+  UVOS_MPU6000_CONFIG_Configure();
+  UVOS_MPU6000_Register();
+#endif
 
   return 0;
 }

@@ -134,10 +134,6 @@ extern "C" {
 #include <uvos_mpu.h>
 #endif
 
-#if defined(UVOS_INCLUDE_MPU6000)
-#include <uvos_mpu6000.h>
-#endif
-
 #ifdef UVOS_INCLUDE_FS
 #include <uvos_fs.h>
 #include <ff.h>

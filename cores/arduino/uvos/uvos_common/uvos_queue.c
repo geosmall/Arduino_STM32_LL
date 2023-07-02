@@ -264,18 +264,6 @@ bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeou
 
 #else
 
-// Inspired by https://github.com/matthewhartstonge/c-queue/blob/master/queue.c
-
-// #include "uvos_semaphore.h"
-
-// Type by which queues are referenced
-// typedef void *QueueHandle;
-
-/* Globals */
-// pthread_mutex_t queue_lock;
-// typedef struct uvos_semaphore queue_lock_t;
-// queue_lock_t queue_lock;
-
 /**
  *
  * @brief   Creates a queue.
@@ -285,22 +273,22 @@ bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeou
  */
 struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
 {
-	struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
+	uintptr_t buf_ptr;
 
+	struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
 	if ( queuep == NULL )
 		return NULL;
 
 	queuep->queue_length = queue_length;
 	queuep->item_size = item_size;
-	queuep->queue_handle = ( uintptr_t )NULL;
 
 	// if ( ( queuep->queue_handle = ( uintptr_t )xQueueCreate( queue_length, item_size ) ) == ( uintptr_t )NULL ) {
-	if ( ( queuep->queue_handle = ( uintptr_t )UVOS_malloc( queue_length * item_size ) ) == ( uintptr_t )NULL ) {
+	if ( ( buf_ptr = ( uintptr_t )UVOS_malloc( queue_length * item_size ) ) == ( uintptr_t )NULL ) {
 		UVOS_free( queuep );
 		return NULL;
 	}
 	// void fifoBuf_init(t_fifo_buffer *buf, const void *buffer, const uint16_t buffer_size);
-	fifoBuf_init( &queuep->queue, &queuep->queue_handle, ( queue_length * item_size ) );
+	fifoBuf_init( &queuep->fifo, (const void *)buf_ptr, ( queue_length * item_size ) );
 
 	return queuep;
 }
@@ -321,7 +309,8 @@ bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t tim
 	UNUSED( timeout_ms );
 	uint16_t ret;
 
-	ret = fifoBuf_putData( &queuep->queue, itemp, queuep->item_size );
+	// uint16_t fifoBuf_putData(t_fifo_buffer *buf, const void *data, uint16_t len)
+	ret = fifoBuf_putData( &queuep->fifo, itemp, queuep->item_size );
 	if ( ret != ( queuep->item_size ) ) {
 		return false;
 	}
@@ -344,7 +333,8 @@ bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeou
 	UNUSED( timeout_ms );
 	uint16_t ret;
 
-	ret = fifoBuf_getData(  &queuep->queue, itemp, queuep->item_size );
+	// uint16_t fifoBuf_getData(t_fifo_buffer *buf, void *data, uint16_t len)
+	ret = fifoBuf_getData(  &queuep->fifo, itemp, queuep->item_size );
 	if ( ret != ( queuep->item_size ) ) {
 		return false;
 	}
