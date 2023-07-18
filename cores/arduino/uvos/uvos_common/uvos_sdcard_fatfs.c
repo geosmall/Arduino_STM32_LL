@@ -9,14 +9,16 @@
 static int32_t UVOS_SDCARD_MountFS( void );
 static int32_t UVOS_SDCARD_UnmountFS( void );
 static bool UVOS_SDCARD_IsMounted( void );
+// static int32_t UVOS_SDCARD_Format( void );
 static int32_t UVOS_SDCARD_GetVolInfo( struct uvos_fs_vol_info *vol_info );
 
 static int32_t UVOS_SDCARD_File_Open( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode );
 static int32_t UVOS_SDCARD_File_Read( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
 static int32_t UVOS_SDCARD_File_Write( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-static int32_t UVOS_SDCARD_File_Seek( struct uvos_fs_file *fp, int32_t offset );
-static uint32_t UVOS_SDCARD_File_Tell( struct uvos_fs_file *fp );
+static int32_t UVOS_SDCARD_File_Seek( struct uvos_fs_file *fp, uint32_t offset );
+static int32_t UVOS_SDCARD_File_Tell( struct uvos_fs_file *fp );
 static int32_t UVOS_SDCARD_File_Close( struct uvos_fs_file *fp );
+static int32_t UVOS_SDCARD_File_Size(  const char *path );
 
 static int32_t UVOS_SDCARD_Remove( const char *path );
 
@@ -37,6 +39,7 @@ const struct uvos_fs_driver uvos_fs_sdcard_driver = {
   .file_seek = UVOS_SDCARD_File_Seek,
   .file_tell = UVOS_SDCARD_File_Tell,
   .file_close = UVOS_SDCARD_File_Close,
+  .file_size = UVOS_SDCARD_File_Size,
   .remove = UVOS_SDCARD_Remove,
   .dir_open = UVOS_SDCARD_Dir_Open,
   .dir_close = UVOS_SDCARD_Dir_Close,
@@ -100,7 +103,7 @@ static BYTE CardType; /* Card type flags */
 
 // Variables for FatFs
 static FATFS FatFs;  //Fatfs handle
-static FRESULT fres; //Result after FatFS operations
+static FRESULT ff_res; //Result after FatFS operations
 
 // Variables for SD Card SPI interface
 static uint32_t UVOS_SDCARD_SPI;
@@ -160,8 +163,8 @@ int32_t UVOS_SDCARD_Init( uint32_t spi_id )
 static int32_t UVOS_SDCARD_MountFS( void )
 {
   // Open the file system
-  fres = f_mount( &FatFs, "", 1 ); // 1=mount now
-  if ( fres != FR_OK ) {
+  ff_res = f_mount( &FatFs, "", 1 ); // 1=mount now
+  if ( ff_res != FR_OK ) {
     sdcard_mounted = false;
     return -1;
   }
@@ -180,8 +183,8 @@ static int32_t UVOS_SDCARD_MountFS( void )
 static int32_t UVOS_SDCARD_UnmountFS( void )
 {
   // Open the file system
-  fres = f_unmount( "" );
-  if ( fres != FR_OK ) {
+  ff_res = f_unmount( "" );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
 
@@ -215,8 +218,8 @@ static int32_t UVOS_SDCARD_GetVolInfo( struct uvos_fs_vol_info *vol_info )
     return -1;
   }
 
-  fres = f_getfree( "", &free_clusters, &fs_ptr );
-  if ( fres != FR_OK ) {
+  ff_res = f_getfree( "", &free_clusters, &fs_ptr );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
 
@@ -241,8 +244,8 @@ static int32_t UVOS_SDCARD_GetVolInfo( struct uvos_fs_vol_info *vol_info )
  */
 static int32_t UVOS_SDCARD_File_Open( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode )
 {
-  fres = f_open( ( FIL * )fp, path, ( BYTE )UVOS_SDCARD_fopen_mode_str_to_enum( mode ) );
-  if ( fres != FR_OK ) {
+  ff_res = f_open( ( FIL * )fp, path, ( BYTE )UVOS_SDCARD_fopen_mode_str_to_enum( mode ) );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
@@ -250,8 +253,8 @@ static int32_t UVOS_SDCARD_File_Open( struct uvos_fs_file *fp, const char *path,
 
 static int32_t UVOS_SDCARD_File_Read( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
-  fres = f_read( ( FIL * )fp, buf, bytes_to_read, ( UINT * )bytes_read );
-  if ( fres != FR_OK ) {
+  ff_res = f_read( ( FIL * )fp, buf, bytes_to_read, ( UINT * )bytes_read );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
@@ -259,42 +262,76 @@ static int32_t UVOS_SDCARD_File_Read( struct uvos_fs_file *fp, void *buf, uint32
 
 static int32_t UVOS_SDCARD_File_Write( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written )
 {
-  fres = f_write( ( FIL * )fp, buf, bytes_to_write, ( UINT * )bytes_written );
-  if ( fres != FR_OK ) {
+  ff_res = f_write( ( FIL * )fp, buf, bytes_to_write, ( UINT * )bytes_written );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
 }
 
-static int32_t UVOS_SDCARD_File_Seek( struct uvos_fs_file *fp, int32_t offset )
+static int32_t UVOS_SDCARD_File_Seek( struct uvos_fs_file *fp, uint32_t offset )
 {
-  fres = f_lseek( ( FIL * )fp, offset );
-  if ( fres != FR_OK ) {
+  ff_res = f_lseek( ( FIL * )fp, offset );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
 }
 
-static uint32_t UVOS_SDCARD_File_Tell( struct uvos_fs_file *fp )
+static int32_t UVOS_SDCARD_File_Tell( struct uvos_fs_file *fp )
 {
-  return ( uint32_t )f_tell( ( FIL * )fp );
+  uint64_t size;
+
+  size = f_tell( ( FIL * )fp );
+  // limit valid file size to UVOS_FS_FILE_MAX for LittleFS compatibility
+  // as LFS_FILE_MAX is defined to be 2147483647 in lfs.h
+  if ( size > UVOS_FS_FILE_MAX ) {
+    return -2;
+  }
+  return ( int32_t )size;
 }
 
 static int32_t UVOS_SDCARD_File_Close( struct uvos_fs_file *fp )
 {
-  fres = f_close( ( FIL * )fp );
-  if ( fres != FR_OK ) {
+  ff_res = f_close( ( FIL * )fp );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
+}
+
+static int32_t UVOS_SDCARD_File_Size( const char *path )
+{
+  FIL fil;        /* File object */
+
+  /* open source file */
+  ff_res = f_open( &fil, path, FA_READ );
+  if ( ff_res != FR_OK ) {
+    return -1;
+  }
+
+  // FSIZE_t defined as DWORD=uint32_t in ff.h (when !FF_FS_EXFAT / !FF_LBA64)
+  FSIZE_t size = f_size( &fil );
+
+  // limit valid file size to UVOS_FS_FILE_MAX for LittleFS compatibility
+  if ( size > UVOS_FS_FILE_MAX ) {
+    return -2;
+  }
+
+  ff_res = f_close( &fil );
+  if ( ff_res != FR_OK ) {
+    return -2;
+  }
+
+  return size;
 }
 
 static int32_t UVOS_SDCARD_Remove( const char *path )
 {
   // If removing a directory, directory must be empty and not read-only
   // Returns a negative error code on failure.
-  fres = f_unlink( path );
-  if ( fres != FR_OK ) {
+  ff_res = f_unlink( path );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
@@ -302,8 +339,8 @@ static int32_t UVOS_SDCARD_Remove( const char *path )
 
 static int32_t UVOS_SDCARD_Dir_Open( struct uvos_fs_dir *dp, const char *path )
 {
-  fres = f_opendir( ( DIR * )dp, path );
-  if ( fres != FR_OK ) {
+  ff_res = f_opendir( ( DIR * )dp, path );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
@@ -311,8 +348,8 @@ static int32_t UVOS_SDCARD_Dir_Open( struct uvos_fs_dir *dp, const char *path )
 
 static int32_t UVOS_SDCARD_Dir_Close( struct uvos_fs_dir *dp )
 {
-  fres = f_closedir( ( DIR * )dp );
-  if ( fres != FR_OK ) {
+  ff_res = f_closedir( ( DIR * )dp );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;
@@ -325,8 +362,8 @@ static int32_t UVOS_SDCARD_Dir_Read( struct uvos_fs_dir *dp, struct uvos_file_in
 {
   FILINFO finfo;
 
-  fres = f_readdir( ( DIR * )dp, &finfo );
-  if ( fres != FR_OK ) {
+  ff_res = f_readdir( ( DIR * )dp, &finfo );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
 
@@ -351,8 +388,8 @@ static int32_t UVOS_SDCARD_Dir_Read( struct uvos_fs_dir *dp, struct uvos_file_in
 
 static int32_t UVOS_SDCARD_Mkdir( const char *path )
 {
-  fres = f_mkdir( path );
-  if ( fres != FR_OK ) {
+  ff_res = f_mkdir( path );
+  if ( ff_res != FR_OK ) {
     return -1;
   }
   return 0;

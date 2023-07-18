@@ -1,6 +1,5 @@
 #include <uvos.h>
 
-
 void UW_led_heartbeat_on( void )
 {
   UVOS_LED_On( UVOS_LED_HEARTBEAT );

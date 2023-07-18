@@ -13,13 +13,13 @@ typedef bool ( *UVOS_SENSORS_test_function )( uintptr_t context );
 typedef void ( *UVOS_SENSORS_reset_function )( uintptr_t context );
 typedef bool ( *UVOS_SENSORS_poll_function )( uintptr_t context );
 typedef void ( *UVOS_SENSORS_fetch_function )( void *samples, uint8_t size, uintptr_t context );
+typedef p_uvos_queue_t ( *UVOS_SENSORS_get_queue_function )( uintptr_t context );
 /**
  * return an array with current scale for the instance.
  * Instances with multiples sensors returns several value in the same
  * order as they appear in UVOS_SENSORS_TYPE enums.
  */
 typedef void ( *UVOS_SENSORS_get_scale_function )( float *, uint8_t size, uintptr_t context );
-typedef uvos_queue_ptr_t ( *UVOS_SENSORS_get_queue_function )( uintptr_t context );
 
 typedef struct UVOS_SENSORS_Driver {
   UVOS_SENSORS_test_function      test; // called at startup to test the sensor
@@ -47,7 +47,7 @@ typedef struct UVOS_SENSORS_Instance {
   const UVOS_SENSORS_Driver    *driver;
   uintptr_t context;
   struct UVOS_SENSORS_Instance *next;
-  uint8_t type;
+  UVOS_SENSORS_TYPE type;
 } UVOS_SENSORS_Instance;
 
 /**
@@ -57,7 +57,7 @@ typedef struct UVOS_SENSORS_3Axis_SensorsWithTemp {
   uint32_t   timestamp;    // UVOS_DELAY_GetRaw() time of sensor read
   uint16_t   count;        // number of sensor instances
   int16_t    temperature;  // Degrees Celsius * 100
-  Vector3i16 sample[];
+  Vector3i16 sample[];     // C99 struct flexible array member
 } UVOS_SENSORS_3Axis_SensorsWithTemp;
 
 typedef struct UVOS_SENSORS_1Axis_SensorsWithTemp {
@@ -134,7 +134,7 @@ static inline void UVOS_SENSOR_Reset( const UVOS_SENSORS_Instance *sensor )
  * @param sensor
  * @return sensor queue or null if not supported
  */
-static inline uvos_queue_ptr_t UVOS_SENSORS_GetQueue( const UVOS_SENSORS_Instance *sensor )
+static inline p_uvos_queue_t UVOS_SENSORS_GetQueue( const UVOS_SENSORS_Instance *sensor )
 {
   UVOS_Assert( sensor );
   if ( !sensor->driver->get_queue ) {

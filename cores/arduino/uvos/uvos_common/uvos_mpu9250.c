@@ -14,7 +14,7 @@ enum uvos_mpu9250_dev_magic {
 struct mpu9250_dev {
   uint32_t spi_id;
   uint32_t slave_num;
-  uvos_queue_ptr_t queue;
+  p_uvos_queue_t queue;
   const struct uvos_mpu9250_cfg *cfg;
   enum uvos_mpu9250_range gyro_range;
   enum uvos_mpu9250_accel_range accel_range;
@@ -120,7 +120,7 @@ static int32_t UVOS_MPU9250_Mag_Init( void );
 bool UVOS_MPU9250_Main_driver_Test( uintptr_t context );
 void UVOS_MPU9250_Main_driver_Reset( uintptr_t context );
 void UVOS_MPU9250_Main_driver_get_scale( float *scales, uint8_t size, uintptr_t context );
-uvos_queue_ptr_t UVOS_MPU9250_Main_driver_get_queue( uintptr_t context );
+p_uvos_queue_t UVOS_MPU9250_Main_driver_get_queue( uintptr_t context );
 
 const UVOS_SENSORS_Driver UVOS_MPU9250_Main_Driver = {
   .test      = UVOS_MPU9250_Main_driver_Test,
@@ -933,7 +933,7 @@ void UVOS_MPU9250_Main_driver_get_scale( float *scales, uint8_t size, __attribut
   scales[1] = UVOS_MPU9250_GetScale();
 }
 
-uvos_queue_ptr_t UVOS_MPU9250_Main_driver_get_queue( __attribute__( ( unused ) ) uintptr_t context )
+p_uvos_queue_t UVOS_MPU9250_Main_driver_get_queue( __attribute__( ( unused ) ) uintptr_t context )
 {
   return dev->queue;
 }

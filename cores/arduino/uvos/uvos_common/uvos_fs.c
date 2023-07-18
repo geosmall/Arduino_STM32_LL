@@ -17,7 +17,7 @@ static const struct uvos_fs_driver *uvos_fs_driver;
 // static struct uvos_fs uv_fs;
 
 static struct uvos_fs_vol_info vol_info;
-static int fres;
+static int32_t fs_res;
 
 /**
  * Initialises file system
@@ -37,8 +37,8 @@ int32_t UVOS_FS_Init( const struct uvos_fs_driver *fs_driver )
   }
 
   /* Retrieve file system volume information, including it's type */
-  fres = uvos_fs_driver->get_vol_info( &vol_info );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->get_vol_info( &vol_info );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -62,8 +62,8 @@ int32_t UVOS_FS_GetVolumeInfo( struct uvos_fs_vol_info *info )
   }
 
   /* Update file system volume info */
-  fres = uvos_fs_driver->get_vol_info( &vol_info );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->get_vol_info( &vol_info );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -92,7 +92,7 @@ int32_t UVOS_FS_Deinit( void )
 
 /* Open a file in a given mode per uvos_fopen_mode_t
    Returns 0 if file open is successful, negative number if unsuccessful */
-int32_t UVOS_FS_file_open( struct uvos_fs_file *file, const char *path, uvos_fopen_mode_t mode )
+int32_t UVOS_FS_FileOpen( struct uvos_fs_file *file, const char *path, uvos_fopen_mode_t mode )
 {
 
   /* Verify file system is mounted and valid type */
@@ -103,8 +103,8 @@ int32_t UVOS_FS_file_open( struct uvos_fs_file *file, const char *path, uvos_fop
   /* Assign mounted FS tpe to file handle passed to us */
   file->type = vol_info.type;
 
-  fres = uvos_fs_driver->file_open( file, path, mode );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->file_open( file, path, mode );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -120,8 +120,8 @@ int32_t UVOS_FS_FileRead( struct uvos_fs_file *file, void *buf, uint32_t bytes_t
     return -1;
   }
 
-  fres = uvos_fs_driver->file_read( file, buf, bytes_to_read, bytes_read );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->file_read( file, buf, bytes_to_read, bytes_read );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -137,8 +137,8 @@ int32_t UVOS_FS_FileWrite( struct uvos_fs_file *file, const void *buf, uint32_t 
     return -1;
   }
 
-  fres = uvos_fs_driver->file_write( file, buf, bytes_to_write, bytes_written );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->file_write( file, buf, bytes_to_write, bytes_written );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -147,7 +147,7 @@ int32_t UVOS_FS_FileWrite( struct uvos_fs_file *file, const void *buf, uint32_t 
 
 /* Seek to a position in a file
    Returns 0 if file open is successful, negative number if unsuccessful */
-int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, int32_t offset )
+int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, uint32_t offset )
 {
   if ( offset < 0 ) { offset = 0; }
 
@@ -156,8 +156,8 @@ int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, int32_t offset )
     return -1;
   }
 
-  fres = uvos_fs_driver->file_seek( file, offset );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->file_seek( file, offset );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -167,7 +167,7 @@ int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, int32_t offset )
 
 /* Get the current position in a file
    Returns current read/write pointer of the file */
-uint32_t UVOS_FS_FileTell( struct uvos_fs_file *file )
+int32_t UVOS_FS_FileTell( struct uvos_fs_file *file )
 {
   return uvos_fs_driver->file_tell( file );
 }
@@ -181,12 +181,30 @@ int32_t UVOS_FS_FileClose( struct uvos_fs_file *file )
     return -1;
   }
 
-  fres = uvos_fs_driver->file_close( file );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->file_close( file );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
   return 0;
+}
+
+/* Get the size of an opened file
+   Returns the size of the file in bytes */
+int32_t UVOS_FS_FileSize( const char *path )
+{
+  /* Verify file system is mounted and valid type */
+  if ( !UVOS_FS_IsValid() ) {
+    return -1;
+  }
+
+  int32_t size = uvos_fs_driver->file_size( path );
+
+  if ( size < 0 ) {
+    return -2;
+  }
+
+  return size;
 }
 
 /* Delete a file or directory
@@ -198,8 +216,8 @@ int32_t UVOS_FS_Remove( const char *path )
     return -1;
   }
 
-  fres = uvos_fs_driver->remove( path );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->remove( path );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -215,8 +233,8 @@ int32_t UVOS_FS_DirOpen( struct uvos_fs_dir *dir, const char *path )
     return -1;
   }
 
-  fres = uvos_fs_driver->dir_open( dir, path );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->dir_open( dir, path );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -232,8 +250,8 @@ int32_t UVOS_FS_DirClose( struct uvos_fs_dir *dir )
     return -1;
   }
 
-  fres = uvos_fs_driver->dir_close( dir );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->dir_close( dir );
+  if ( fs_res < 0 ) {
     return -2;
   }
 
@@ -250,10 +268,10 @@ int32_t UVOS_FS_DirRead( struct uvos_fs_dir *dir, struct uvos_file_info *dir_inf
   }
 
   /* dir_read() returns positive value on success, 0 at the end of directory, or a negative error code on failure. */
-  fres = uvos_fs_driver->dir_read( dir, ( struct uvos_file_info * )dir_info );
-  if ( fres == 0 ) {
+  fs_res = uvos_fs_driver->dir_read( dir, ( struct uvos_file_info * )dir_info );
+  if ( fs_res == 0 ) {
     return 0; // end of directory
-  } else if ( fres > 0 ) {
+  } else if ( fs_res > 0 ) {
     return true; // success
   } else {
     return -2;
@@ -269,8 +287,8 @@ int32_t UVOS_FS_Mkdir( const char *path )
     return -1;
   }
 
-  fres = uvos_fs_driver->mkdir( path );
-  if ( fres ) {
+  fs_res = uvos_fs_driver->mkdir( path );
+  if ( fs_res < 0 ) {
     return -2;
   }
 

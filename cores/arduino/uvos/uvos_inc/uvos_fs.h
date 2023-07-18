@@ -58,40 +58,30 @@ struct uvos_fs_dir {
   uvos_fs_type_t type; // File system type (invalid, FatFS, LittleFS)
 };
 
+// Maximum size of a file in bytes is limited by LittleFS implementation.
+// LittleFS is limited on disk to <= 4294967296. However, above 2147483647 the
+// functions lfs_file_seek, lfs_file_size, and lfs_file_tell will return
+// incorrect values due to using signed integers.
+#define UVOS_FS_FILE_MAX 2147483647
+
 // Declare file or directory information structure
 struct uvos_file_info {
   char name[UVOS_FILE_NAME_Z]; // The name of the file or directory
-  uint64_t size; // Size of the file, only valid for files (not dirs)
+  uint32_t size; // Size of the file, only valid for files (not dirs) up to UVOS_FS_FILE_MAX
   bool is_dir; // Whether the entry is a directory or not
 };
-
-// struct uvos_fs_driver {
-//   int32_t ( *mount_fs )( void );
-//   int32_t ( *unmount_fs )( void );
-//   bool ( *is_mounted )( void );
-//   int32_t ( *get_vol_info )( struct uvos_fs_vol_info *vol_info );
-//   int32_t ( *file_open )( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode );
-//   int32_t ( *file_read )( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
-//   int32_t ( *file_write )( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-//   int32_t ( *file_seek )( struct uvos_fs_file *fp, int32_t offset );
-//   uint32_t ( *file_tell )( struct uvos_fs_file *fp );
-//   int32_t ( *file_close )( struct uvos_fs_file *fp );
-//   int32_t ( *file_remove )( const char *path );
-//   int32_t ( *dir_open )( struct uvos_fs_dir *dp, const char *path );
-//   int32_t ( *dir_close )( struct uvos_fs_dir *dp );
-//   int32_t ( *dir_read )( struct uvos_fs_dir *dp, struct uvos_file_info *file_info );
-// };
 
 /* Public Functions */
 // extern int32_t UVOS_FS_Init( const struct uvos_fs_driver *fs_driver );
 extern bool UVOS_FS_IsValid( void );
 extern int32_t UVOS_FS_Deinit( void );
-extern int32_t UVOS_FS_file_open( struct uvos_fs_file *file, const char *path, uvos_fopen_mode_t mode );
+extern int32_t UVOS_FS_FileOpen( struct uvos_fs_file *file, const char *path, uvos_fopen_mode_t mode );
 extern int32_t UVOS_FS_FileRead( struct uvos_fs_file *file, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
 extern int32_t UVOS_FS_FileWrite( struct uvos_fs_file *file, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-extern int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, int32_t offset );
-extern uint32_t UVOS_FS_FileTell( struct uvos_fs_file *file );
+extern int32_t UVOS_FS_FileSeek( struct uvos_fs_file *file, uint32_t offset );
+extern int32_t UVOS_FS_FileTell( struct uvos_fs_file *file );
 extern int32_t UVOS_FS_FileClose( struct uvos_fs_file *file );
+extern int32_t UVOS_FS_FileSize( const char *path );
 extern int32_t UVOS_FS_Remove( const char *path );
 extern int32_t UVOS_FS_DirOpen( struct uvos_fs_dir *dir, const char *path );
 extern int32_t UVOS_FS_DirClose( struct uvos_fs_dir *dir );

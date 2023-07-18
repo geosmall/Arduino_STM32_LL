@@ -69,9 +69,12 @@ typedef enum {
   FS_ERR_RANGE                     =  -5, /*!< Request out of range */
 } fs_error_t;
 
-struct uvos_fs_file typedef UW_fs_file_t;
-struct uvos_fs_dir typedef UW_fs_dir_t;
-struct uvos_file_info typedef UW_fs_file_info_t;
+// struct uvos_fs_file typedef UW_fs_file_t;
+// struct uvos_fs_dir typedef UW_fs_dir_t;
+// struct uvos_file_info typedef UW_fs_file_info_t;
+typedef struct uvos_fs_file UW_fs_file_t;
+typedef struct uvos_fs_dir UW_fs_dir_t;
+typedef struct uvos_file_info UW_fs_file_info_t;
 
 
 // Initialize and mount a logical file system
@@ -85,6 +88,10 @@ extern bool UW_fs_is_valid( void );
 // Get volume info (total and free Kbytes)
 // Returns 0 on success, or negative error code on failure
 extern int UW_fs_get_vol_info( UW_fs_vol_info_t *vol_info );
+
+// Find file size if file is not a directory
+// Returns file size, or negative error code on failure
+extern int UW_fs_get_file_size( const char * filePath );
 
 // Reads in a file from file system into provided buffer
 // Returns 0 on success, or negative error code on failure

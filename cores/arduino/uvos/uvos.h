@@ -130,10 +130,6 @@ extern "C" {
 #include <uvos_servo.h>
 #endif
 
-#ifdef UVOS_INCLUDE_MPU
-#include <uvos_mpu.h>
-#endif
-
 #ifdef UVOS_INCLUDE_FS
 #include <uvos_fs.h>
 #include <ff.h>

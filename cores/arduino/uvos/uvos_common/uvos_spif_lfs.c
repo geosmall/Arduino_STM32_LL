@@ -15,9 +15,10 @@ static int32_t UVOS_SPIF_GetVolInfo( struct uvos_fs_vol_info *vol_info );
 static int32_t UVOS_SPIF_File_Open( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode );
 static int32_t UVOS_SPIF_File_Read( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
 static int32_t UVOS_SPIF_File_Write( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-static int32_t UVOS_SPIF_File_Seek( struct uvos_fs_file *fp, int32_t offset );
-static uint32_t UVOS_SPIF_File_Tell( struct uvos_fs_file *fp );
+static int32_t UVOS_SPIF_File_Seek( struct uvos_fs_file *fp, uint32_t offset );
+static int32_t UVOS_SPIF_File_Tell( struct uvos_fs_file *fp );
 static int32_t UVOS_SPIF_File_Close( struct uvos_fs_file *fp );
+static int32_t UVOS_SPIF_File_Size(  const char *path );
 
 static int32_t UVOS_SPIF_Remove( const char *path );
 
@@ -38,6 +39,7 @@ const struct uvos_fs_driver uvos_fs_spif_driver = {
   .file_seek = UVOS_SPIF_File_Seek,
   .file_tell = UVOS_SPIF_File_Tell,
   .file_close = UVOS_SPIF_File_Close,
+  .file_size = UVOS_SPIF_File_Size,
   .remove = UVOS_SPIF_Remove,
   .dir_open = UVOS_SPIF_Dir_Open,
   .dir_close = UVOS_SPIF_Dir_Close,
@@ -126,7 +128,7 @@ static bool spif_mounted = false;
 
 // Variables for LittleFS
 static lfs_t FS_lfs;
-static int fres; //Result after LittleFS operations
+static int lfs_res; //Result after LittleFS operations
 
 // Variables for SPI Flash interface
 static uint32_t UVOS_SPIF_SPI;
@@ -192,8 +194,8 @@ int32_t UVOS_SPIF_Init( uint32_t spi_id )
 static int32_t UVOS_SPIF_MountFS( void )
 {
   // Open the file system
-  fres = lfs_mount( &FS_lfs, &FS_cfg );
-  if ( fres != LFS_ERR_OK ) {
+  lfs_res = lfs_mount( &FS_lfs, &FS_cfg );
+  if ( lfs_res != LFS_ERR_OK ) {
     spif_mounted = false;
     return -1;
   }
@@ -212,8 +214,8 @@ static int32_t UVOS_SPIF_MountFS( void )
 static int32_t UVOS_SPIF_UnmountFS( void )
 {
   // Open the file system
-  fres = lfs_unmount( &FS_lfs );
-  if ( fres != LFS_ERR_OK ) {
+  lfs_res = lfs_unmount( &FS_lfs );
+  if ( lfs_res != LFS_ERR_OK ) {
     return -1;
   }
 
@@ -241,8 +243,8 @@ static bool UVOS_SPIF_IsMounted( void )
 static int32_t UVOS_SPIF_Format( void )
 {
   /* Format the file system (clobbers littlefs object, leaves file system mounted) */
-  fres = lfs_format( &FS_lfs, &FS_cfg );
-  if ( fres != LFS_ERR_OK ) {
+  lfs_res = lfs_format( &FS_lfs, &FS_cfg );
+  if ( lfs_res != LFS_ERR_OK ) {
     return -1;
   }
 
@@ -284,11 +286,11 @@ static int32_t UVOS_SPIF_File_Open( struct uvos_fs_file *fp, const char *path, u
 
   /* open source file */
 #ifdef LFS_NO_MALLOC
-  fres = lfs_file_opencfg( &FS_lfs, ( lfs_file_t * )fp, path, lfs_flags, &file_cfg );
+  lfs_res = lfs_file_opencfg( &FS_lfs, ( lfs_file_t * )fp, path, lfs_flags, &file_cfg );
 #else
-  fres = lfs_file_open( &FS_lfs, ( lfs_file_t * )fp, path, lfs_flags );
+  lfs_res = lfs_file_open( &FS_lfs, ( lfs_file_t * )fp, path, lfs_flags );
 #endif
-  if ( fres != LFS_ERR_OK ) {
+  if ( lfs_res != LFS_ERR_OK ) {
     return -1;
   }
 
@@ -297,15 +299,15 @@ static int32_t UVOS_SPIF_File_Open( struct uvos_fs_file *fp, const char *path, u
 
 static int32_t UVOS_SPIF_File_Read( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read )
 {
-  fres = lfs_file_read( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_read );
-  if ( fres < 0 ) {
+  lfs_res = lfs_file_read( &FS_lfs, ( lfs_file_t * )fp, buf, bytes_to_read );
+  if ( lfs_res < 0 ) {
     return -1;
   }
-  if ( fres != bytes_to_read ) {
+  if ( lfs_res != bytes_to_read ) {
     return -2;
   }
 
-  *bytes_read = fres;
+  *bytes_read = lfs_res;
   return 0;
 }
 
@@ -325,7 +327,7 @@ static int32_t UVOS_SPIF_File_Write( struct uvos_fs_file *fp, const void *buf, u
   return 0;
 }
 
-static int32_t UVOS_SPIF_File_Seek( struct uvos_fs_file *fp, int32_t offset )
+static int32_t UVOS_SPIF_File_Seek( struct uvos_fs_file *fp, uint32_t offset )
 {
   lfs_soff_t lfs_seek_res;
 
@@ -340,7 +342,7 @@ static int32_t UVOS_SPIF_File_Seek( struct uvos_fs_file *fp, int32_t offset )
   return 0;
 }
 
-static uint32_t UVOS_SPIF_File_Tell( struct uvos_fs_file *fp )
+static int32_t UVOS_SPIF_File_Tell( struct uvos_fs_file *fp )
 {
   lfs_soff_t lfs_tell_res;
 
@@ -354,19 +356,50 @@ static uint32_t UVOS_SPIF_File_Tell( struct uvos_fs_file *fp )
 
 static int32_t UVOS_SPIF_File_Close( struct uvos_fs_file *fp )
 {
-  fres = lfs_file_close( &FS_lfs, ( lfs_file_t * )fp );
-  if ( fres < 0 ) {
+  lfs_res = lfs_file_close( &FS_lfs, ( lfs_file_t * )fp );
+  if ( lfs_res < 0 ) {
     return -1;
   }
   return 0;
+}
+
+// Returns the size of the file, or a negative error code on failure.
+static int32_t UVOS_SPIF_File_Size( const char *path )
+{
+  lfs_file_t fil;
+
+  /* open source file */
+#ifdef LFS_NO_MALLOC
+  lfs_res = lfs_file_opencfg( &FS_lfs, &fil, path, LFS_O_RDONLY, &file_cfg );
+#else
+  lfs_res = lfs_file_open( &FS_lfs, &fil, path, LFS_O_RDONLY );
+#endif
+  if ( lfs_res < 0 ) {
+    return -1;
+  }
+
+  // lfs_soff_t defined as int32_t in lfs.h
+  // lfs_file_size returns a negative error code on fail
+  lfs_soff_t size = lfs_file_size( &FS_lfs, &fil );
+  if ( size < 0 ) {
+    return -2;
+  }
+
+  /* clean up */
+  lfs_res = lfs_file_close( &FS_lfs, &fil );
+  if ( lfs_res < 0 ) {
+    return -3;
+  }
+
+  return size;
 }
 
 static int32_t UVOS_SPIF_Remove( const char *path )
 {
   // If removing a directory, directory must be empty.
   // Returns a negative error code on failure.
-  fres = lfs_remove( &FS_lfs, path );
-  if ( fres < 0 ) {
+  lfs_res = lfs_remove( &FS_lfs, path );
+  if ( lfs_res < 0 ) {
     return -1;
   }
   return 0;
@@ -374,8 +407,8 @@ static int32_t UVOS_SPIF_Remove( const char *path )
 
 static int32_t UVOS_SPIF_Dir_Open( struct uvos_fs_dir *dp, const char *path )
 {
-  fres = lfs_dir_open( &FS_lfs, ( lfs_dir_t * )dp, path );
-  if ( fres < 0 ) {
+  lfs_res = lfs_dir_open( &FS_lfs, ( lfs_dir_t * )dp, path );
+  if ( lfs_res < 0 ) {
     return -1;
   }
   return 0;
@@ -383,8 +416,8 @@ static int32_t UVOS_SPIF_Dir_Open( struct uvos_fs_dir *dp, const char *path )
 
 static int32_t UVOS_SPIF_Dir_Close( struct uvos_fs_dir *dp )
 {
-  fres = lfs_dir_close( &FS_lfs, ( lfs_dir_t * )dp );
-  if ( fres < 0 ) {
+  lfs_res = lfs_dir_close( &FS_lfs, ( lfs_dir_t * )dp );
+  if ( lfs_res < 0 ) {
     return -1;
   }
   return 0;
@@ -397,8 +430,8 @@ static int32_t UVOS_SPIF_Dir_Read( struct uvos_fs_dir *dp, struct uvos_file_info
 {
   struct lfs_info finfo;
 
-  fres = lfs_dir_read( &FS_lfs, ( lfs_dir_t * )dp, &finfo );
-  if ( fres < 0 ) {
+  lfs_res = lfs_dir_read( &FS_lfs, ( lfs_dir_t * )dp, &finfo );
+  if ( lfs_res < 0 ) {
     return -1;
   }
 
@@ -414,7 +447,7 @@ static int32_t UVOS_SPIF_Dir_Read( struct uvos_fs_dir *dp, struct uvos_file_info
   strncpy( file_info->name, finfo.name, UVOS_FILE_NAME_Z );
   file_info->name[UVOS_FILE_NAME_Z - 1] = '\0';
 
-  if ( fres > 0 ) {
+  if ( lfs_res > 0 ) {
     return true; // success
   } else {
     return 0; // end of directory
@@ -423,8 +456,8 @@ static int32_t UVOS_SPIF_Dir_Read( struct uvos_fs_dir *dp, struct uvos_file_info
 
 static int32_t UVOS_SPIF_Mkdir( const char *path )
 {
-  fres = lfs_mkdir( &FS_lfs, path );
-  if ( fres < 0 ) {
+  lfs_res = lfs_mkdir( &FS_lfs, path );
+  if ( lfs_res < 0 ) {
     return -1;
   }
   return 0;
@@ -478,9 +511,9 @@ static inline LittleFS_fopen_mode_t UVOS_SDCARD_fopen_mode_str_to_enum( uvos_fop
 
 static int block_device_read( const struct lfs_config *c, lfs_block_t block,  lfs_off_t off, void *buffer, lfs_size_t size )
 {
-  fres = UVOS_Flash_Jedec_ReadData( uvos_spif_jedec_id, block * c->block_size + off, buffer, size );
+  lfs_res = UVOS_Flash_Jedec_ReadData( uvos_spif_jedec_id, block * c->block_size + off, buffer, size );
 
-  if ( fres ) {
+  if ( lfs_res ) {
     return LFS_ERR_IO;
   }
   return LFS_ERR_OK;
@@ -488,9 +521,9 @@ static int block_device_read( const struct lfs_config *c, lfs_block_t block,  lf
 
 static int block_device_prog( const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size )
 {
-  fres = UVOS_Flash_Jedec_WriteData( uvos_spif_jedec_id, block * c->block_size + off, ( uint8_t * )buffer, size );
+  lfs_res = UVOS_Flash_Jedec_WriteData( uvos_spif_jedec_id, block * c->block_size + off, ( uint8_t * )buffer, size );
 
-  if ( fres ) {
+  if ( lfs_res ) {
     return LFS_ERR_IO;
   }
   return LFS_ERR_OK;
@@ -498,9 +531,9 @@ static int block_device_prog( const struct lfs_config *c, lfs_block_t block, lfs
 
 static int block_device_erase( const struct lfs_config *c, lfs_block_t block )
 {
-  fres = UVOS_Flash_Jedec_EraseSector( uvos_spif_jedec_id, block * c->block_size );
+  lfs_res = UVOS_Flash_Jedec_EraseSector( uvos_spif_jedec_id, block * c->block_size );
 
-  if ( fres ) {
+  if ( lfs_res ) {
     return LFS_ERR_IO;
   }
   return LFS_ERR_OK;

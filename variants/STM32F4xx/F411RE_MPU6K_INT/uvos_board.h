@@ -81,6 +81,11 @@ void SystemClock_Config( void );
 #define UVOS_SPI_MAX_DEVS      3
 
 // ------------------------
+// Max number of IMU reset tries
+// ------------------------
+#define UVOS_IMU_MAX_TRIES     5
+
+// ------------------------
 // UVOS_WDG
 // ------------------------
 #define UVOS_WATCHDOG_TIMEOUT  500

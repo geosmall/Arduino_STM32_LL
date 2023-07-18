@@ -44,8 +44,7 @@
 // #define UVOS_INCLUDE_WDG
 
 /* UVOS sensor interfaces */
-#define UVOS_INCLUDE_MPU
-// #define UVOS_MPU_ACCEL
+#define UVOS_INCLUDE_ICM42688P
 
 /* UVOS receiver drivers */
 // #define UVOS_INCLUDE_DSM

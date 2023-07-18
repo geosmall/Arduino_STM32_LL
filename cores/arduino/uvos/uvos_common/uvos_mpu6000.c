@@ -1,5 +1,6 @@
-#include "uvos.h"
-#include <uvos_mpu6000.h>
+#include <uvos.h>
+#include "uvos_mpu6000.h"
+#include "uvos_mpu6000_config.h"
 
 #ifdef UVOS_INCLUDE_MPU6000
 #include <stdint.h>
@@ -14,14 +15,16 @@ enum uvos_mpu6000_dev_magic {
 
 // sensor driver interface
 bool UVOS_MPU6000_driver_Test( uintptr_t context );
+bool UVOS_MPU6000_driver_poll( uintptr_t context );
+void UVOS_MPU6000_driver_fetch( void *data, uint8_t size, uintptr_t context );
 void UVOS_MPU6000_driver_Reset( uintptr_t context );
+p_uvos_queue_t UVOS_MPU6000_driver_get_queue( uintptr_t context );
 void UVOS_MPU6000_driver_get_scale( float *scales, uint8_t size, uintptr_t context );
-uvos_queue_ptr_t UVOS_MPU6000_driver_get_queue( uintptr_t context );
 
 const UVOS_SENSORS_Driver UVOS_MPU6000_Driver = {
   .test      = UVOS_MPU6000_driver_Test,
-  .poll      = NULL,
-  .fetch     = NULL,
+  .poll      = UVOS_MPU6000_driver_poll,
+  .fetch     = UVOS_MPU6000_driver_fetch,
   .reset     = UVOS_MPU6000_driver_Reset,
   .get_queue = UVOS_MPU6000_driver_get_queue,
   .get_scale = UVOS_MPU6000_driver_get_scale,
@@ -33,7 +36,7 @@ const UVOS_SENSORS_Driver UVOS_MPU6000_Driver = {
 struct mpu6000_dev {
   uint32_t spi_id;
   uint32_t slave_num;
-  uvos_queue_ptr_t queue;
+  p_uvos_queue_t queue;
   const struct uvos_mpu6000_cfg *cfg;
   enum uvos_mpu6000_range gyro_range;
   enum uvos_mpu6000_accel_range accel_range;
@@ -267,7 +270,7 @@ static int32_t UVOS_MPU6000_Config( struct uvos_mpu6000_cfg const *cfg )
 
   // Chip reset
   uint8_t tries;
-  for ( tries = 0; tries < UVOS_MPU_MAX_TRIES; tries++ ) {
+  for ( tries = 0; tries < UVOS_IMU_MAX_TRIES; tries++ ) {
     _last_stat_user_ctrl = UVOS_MPU6000_GetReg( MPUREG_USER_CTRL );
 
     /* First disable the master I2C to avoid hanging the slaves on the
@@ -317,7 +320,7 @@ static int32_t UVOS_MPU6000_Config( struct uvos_mpu6000_cfg const *cfg )
     }
   }
 
-  if ( tries >= UVOS_MPU_MAX_TRIES ) {
+  if ( tries >= UVOS_IMU_MAX_TRIES ) {
     return -4;
   }
 
@@ -341,7 +344,21 @@ static int32_t UVOS_MPU6000_Config( struct uvos_mpu6000_cfg const *cfg )
     ;
   }
 
-  UVOS_MPU6000_ConfigureRanges( cfg->gyro_range, cfg->accel_range, cfg->filter );
+  MPUGyroAccelSettingsData settings;
+  MPUGyroAccelSettingsGet( &settings );
+  if ( settings.isSet ) {
+    UVOS_MPU6000_ConfigureRanges(
+      UVOS_MPU6000_CONFIG_MAP_GYROSCALE( settings.GyroScale ),
+      UVOS_MPU6000_CONFIG_MAP_ACCELSCALE( settings.AccelScale ),
+      UVOS_MPU6000_CONFIG_MAP_FILTERSETTING( settings.FilterSetting )
+    );
+  } else {
+    UVOS_MPU6000_ConfigureRanges(
+      cfg->gyro_range,
+      cfg->accel_range,
+      cfg->filter
+    );
+  }
 
   // User Control Register configuration
   while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_USER_CTRL_REG, cfg->User_ctl ) != 0 ) {
@@ -576,10 +593,10 @@ int32_t UVOS_MPU6000_ReadID()
  * \brief Reads the queue handle
  * \return Handle to the queue or null if invalid device
  */
-uvos_queue_ptr_t UVOS_MPU6000_GetQueue()
+p_uvos_queue_t UVOS_MPU6000_GetQueue()
 {
   if ( UVOS_MPU6000_Validate( dev ) != 0 ) {
-    return ( uvos_queue_ptr_t )NULL;
+    return ( p_uvos_queue_t )NULL;
   }
 
   return dev->queue;
@@ -662,6 +679,7 @@ bool UVOS_MPU6000_IRQHandler( void )
     woken |= UVOS_MPU6000_HandleData( gyro_read_timestamp );
   }
 
+  UVOS_Queue_Send( dev->queue, ( void * )queue_data, 0 );
   return woken;
 }
 
@@ -671,36 +689,47 @@ static bool UVOS_MPU6000_HandleData( uint32_t gyro_read_timestamp )
     return false;
   }
 
-  // Rotate the sensor to OP convention.  The datasheet defines X as towards the right
-  // and Y as forward.  OP convention transposes this.  Also the Z is defined negatively
-  // to our convention
+  /* Figure below shows the axis convention used for IMU data and vehicle orientation.
+     +X is denoted as out the nose, +Y is out the right side, and +Z is upward.
+
+           +x                   +y
+           |                    |
+    +-------------+      +-------------+
+    |             |      | o           |
+    |             |      |             |
+    |    +z up    |--+y  |    +z up    |--+x
+    |   Vehicle   |      |   MPU6000   |
+    |             |      |             |
+    +-------------+      +-------------+
+
+  */
 
   // Currently we only support rotations on top so switch X/Y accordingly
   switch ( dev->cfg->orientation ) {
   case UVOS_MPU6000_TOP_0DEG:
-    queue_data->sample[0].y = GET_SENSOR_DATA( mpu6000_data, Accel_X ); // chip X
-    queue_data->sample[0].x = GET_SENSOR_DATA( mpu6000_data, Accel_Y ); // chip Y
-    queue_data->sample[1].y = GET_SENSOR_DATA( mpu6000_data, Gyro_X ); // chip X
-    queue_data->sample[1].x = GET_SENSOR_DATA( mpu6000_data, Gyro_Y ); // chip Y
+    queue_data->sample[0].x = GET_SENSOR_DATA( mpu6000_data, Accel_Y ); // chip +Y
+    queue_data->sample[0].y = GET_SENSOR_DATA( mpu6000_data, Accel_X ); // chip +X
+    queue_data->sample[1].x = GET_SENSOR_DATA( mpu6000_data, Gyro_Y ); // chip +Y
+    queue_data->sample[1].y = GET_SENSOR_DATA( mpu6000_data, Gyro_X ); // chip +X
     break;
   case UVOS_MPU6000_TOP_90DEG:
     // -1 to bring it back to -32768 +32767 range
-    queue_data->sample[0].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_Y ) ); // chip Y
-    queue_data->sample[0].x = GET_SENSOR_DATA( mpu6000_data, Accel_X ); // chip X
-    queue_data->sample[1].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_Y ) ); // chip Y
-    queue_data->sample[1].x = GET_SENSOR_DATA( mpu6000_data, Gyro_X ); // chip X
+    queue_data->sample[0].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_X ) ); // chip -X
+    queue_data->sample[0].y = GET_SENSOR_DATA( mpu6000_data, Accel_Y ); // chip +Y
+    queue_data->sample[1].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_X ) ); // chip -X
+    queue_data->sample[1].y = GET_SENSOR_DATA( mpu6000_data, Gyro_Y ); // chip +Y
     break;
   case UVOS_MPU6000_TOP_180DEG:
-    queue_data->sample[0].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_X ) ); // chip X
-    queue_data->sample[0].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_Y ) ); // chip Y
-    queue_data->sample[1].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_X ) ); // chip X
-    queue_data->sample[1].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_Y ) ); // chip Y
+    queue_data->sample[0].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_Y ) ); // chip -Y
+    queue_data->sample[0].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_X ) ); // chip -X
+    queue_data->sample[1].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_Y ) ); // chip -Y
+    queue_data->sample[1].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_X ) ); // chip -X
     break;
   case UVOS_MPU6000_TOP_270DEG:
-    queue_data->sample[0].y = GET_SENSOR_DATA( mpu6000_data, Accel_Y ); // chip Y
-    queue_data->sample[0].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_X ) ); // chip X
-    queue_data->sample[1].y = GET_SENSOR_DATA( mpu6000_data, Gyro_Y ); // chip Y
-    queue_data->sample[1].x = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_X ) ); // chip X
+    queue_data->sample[0].x = GET_SENSOR_DATA( mpu6000_data, Accel_X ); // chip +X
+    queue_data->sample[0].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_Y ) ); // chip -Y
+    queue_data->sample[1].x = GET_SENSOR_DATA( mpu6000_data, Gyro_X ); // chip +X
+    queue_data->sample[1].y = -1 - ( GET_SENSOR_DATA( mpu6000_data, Gyro_Y ) ); // chip -Y
     break;
   }
   queue_data->sample[0].z = -1 - ( GET_SENSOR_DATA( mpu6000_data, Accel_Z ) );
@@ -714,7 +743,7 @@ static bool UVOS_MPU6000_HandleData( uint32_t gyro_read_timestamp )
   // xQueueSendToBackFromISR( dev->queue, ( void * )queue_data, &higherPriorityTaskWoken );
   // return higherPriorityTaskWoken == pdTRUE;
 
-  UVOS_Queue_Send( dev->queue, ( void * )queue_data, 0 );
+  // UVOS_Queue_Send( dev->queue, ( void * )queue_data, 0 );
   return true;
 }
 
@@ -744,14 +773,55 @@ void UVOS_MPU6000_driver_Reset( __attribute__( ( unused ) ) uintptr_t context )
   UVOS_MPU6000_DummyReadGyros();
 }
 
-void UVOS_MPU6000_driver_get_scale( float *scales, uint8_t size, __attribute__( ( unused ) ) uintptr_t contet )
+void UVOS_MPU6000_driver_get_scale( float *scales, uint8_t size, __attribute__( ( unused ) ) uintptr_t context )
 {
   UVOS_Assert( size >= 2 );
   scales[0] = UVOS_MPU6000_GetAccelScale();
   scales[1] = UVOS_MPU6000_GetScale();
 }
 
-uvos_queue_ptr_t UVOS_MPU6000_driver_get_queue( __attribute__( ( unused ) ) uintptr_t context )
+bool UVOS_MPU6000_driver_poll( __attribute__( ( unused ) ) uintptr_t context )
+{
+  const uint8_t mpu6000_send_buf[1 + UVOS_MPU6000_SAMPLES_BYTES] = { UVOS_MPU6000_SENSOR_FIRST_REG | 0x80 };
+
+  uint32_t gyro_read_timestamp = UVOS_DELAY_GetRaw();
+
+  if ( UVOS_MPU6000_ClaimBus( true ) != 0 ) {
+    return false;
+  }
+  if ( UVOS_SPI_TransferBlock( dev->spi_id, &mpu6000_send_buf[0], &mpu6000_data.buffer[0], sizeof( mpu6000_data_t ), NULL ) < 0 ) {
+    UVOS_MPU6000_ReleaseBus();
+    return false;
+  }
+  UVOS_MPU6000_ReleaseBus();
+
+  return UVOS_MPU6000_HandleData( gyro_read_timestamp );
+}
+
+/**
+ * @brief Fetch polled MPU6000 data
+ * @return nothing
+ * @param data[in,out] If non-NULL, will be set to true if woken was false and a higher priority
+ * @param size[in] number of sensor data instances to return
+ * @param context[in] driver context, not used
+ *     uint32_t   timestamp;       // PIOS_DELAY_GetRaw() time of sensor read
+ *     uint16_t   count;           // number of sensor instances
+ *     int16_t    temperature;     // Degrees Celsius * 100
+ *     Vector3i16 accel_sample[];  // 3x16 bit accel data
+ *     Vector3i16 gyro_sample[];   // 3x16 bit gyro data
+ */
+void UVOS_MPU6000_driver_fetch( void *data, uint8_t size, __attribute__( ( unused ) ) uintptr_t context )
+{
+  UVOS_Assert( data );
+
+  if ( !queue_data ) {
+    return;
+  }
+  // void * memcpy ( void * destination, const void * source, size_t num )
+  memcpy( data, ( void * )queue_data, SENSOR_DATA_SIZE );
+}
+
+p_uvos_queue_t UVOS_MPU6000_driver_get_queue( __attribute__( ( unused ) ) uintptr_t context )
 {
   return dev->queue;
 }

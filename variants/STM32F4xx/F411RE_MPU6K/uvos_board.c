@@ -14,13 +14,6 @@
  */
 #include "board_hw_defs.c.inc"
 
-/**
- * Configuration for the MPU chip
- */
-#if defined(UVOS_INCLUDE_MPU)
-#include "uvos_mpu.h"
-// #include "uvos_mpu_config.h"
-
 #if defined( UVOS_INCLUDE_EXTI )
 
 bool UVOS_USER_BTN_IRQHandler( void )
@@ -106,30 +99,18 @@ static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
   // with dlp on output rate is 1000Hz
   .Smpl_rate_div_dlp    = 0,
   .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
-  .interrupt_en   = UVOS_MPU6000_INTEN_DATA_RDY,
+  .interrupt_en   = 0,
   .User_ctl       = UVOS_MPU6000_USERCTL_DIS_I2C,
   .Pwr_mgmt_clk   = UVOS_MPU6000_PWRMGMT_PLL_Z_CLK,
   .accel_range    = UVOS_MPU6000_ACCEL_8G,
   .gyro_range     = UVOS_MPU6000_SCALE_2000_DEG,
   .filter         = UVOS_MPU6000_LOWPASS_256_HZ,
-  .orientation    = UVOS_MPU6000_TOP_180DEG,
+  .orientation    = UVOS_MPU6000_TOP_0DEG,
   .fast_prescaler = UVOS_SPI_PRESCALER_16,
   .std_prescaler  = UVOS_SPI_PRESCALER_128,
   .max_downsample = 20,
 };
 #endif /* UVOS_INCLUDE_MPU6000 */
-
-static const uvos_mpu_cfg_t uvos_mpu_cfg = {
-  .expected_device_id = Invensense_MPU6000,
-  // .exti_cfg   = &uvos_exti_mpu_cfg,
-  .default_samplerate_hz = UVOS_MAIN_LOOP_RATE,
-  .default_gyro_range    = UVOS_GYRO_RANGE_2000DPS,
-  .default_accel_range   = UVOS_ACCEL_RANGE_4G,
-  .fast_prescaler        = UVOS_SPI_PRESCALER_16,  // 96MHz / 16 = 6MHz
-  .std_prescaler         = UVOS_SPI_PRESCALER_128, // 96MHz / 128 = 0.75MHz
-};
-
-#endif /* UVOS_INCLUDE_MPU */
 
 /* One slot per selectable receiver group.
  *  eg. PWM, PPM, GCS, SPEKTRUM1, SPEKTRUM2, SBUS
@@ -337,16 +318,12 @@ int32_t UVOS_Board_Init( void )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
-  // if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
-//   if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg ) ) {
-// #if !defined( SKIP_MPU_EXISTS_CHECK )
-//     return -4;
-// #endif // !defined( SKIP_MPU_EXISTS_ASSERT )
-  // }
-
 #if defined(UVOS_INCLUDE_MPU6000)
-  UVOS_MPU6000_Init(uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg);
-  UVOS_MPU6000_CONFIG_Configure();
+  /* Initialize IMU, initial settings per uvos_mpu6000_cfg defined above */
+  UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
+  /* Configure settings */
+  // UVOS_MPU6000_CONFIG_Configure();
+  /* Register MPU6000 as a sensor via UVOS_SENSORS_Register() */
   UVOS_MPU6000_Register();
 #endif
 

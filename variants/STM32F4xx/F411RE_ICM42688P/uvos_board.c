@@ -14,13 +14,6 @@
  */
 #include "board_hw_defs.c.inc"
 
-/**
- * Configuration for the MPU chip
- */
-#if defined(UVOS_INCLUDE_MPU)
-#include "uvos_mpu.h"
-// #include "uvos_mpu_config.h"
-
 #if defined( UVOS_INCLUDE_EXTI )
 
 bool UVOS_USER_BTN_IRQHandler( void )
@@ -70,8 +63,6 @@ static const uvos_mpu_cfg_t uvos_mpu_cfg = {
   .fast_prescaler        = UVOS_SPI_PRESCALER_16,  // 96MHz / 16 = 6MHz
   .std_prescaler         = UVOS_SPI_PRESCALER_128, // 96MHz / 128 = 0.75MHz
 };
-
-#endif /* UVOS_INCLUDE_MPU */
 
 /* One slot per selectable receiver group.
  *  eg. PWM, PPM, GCS, SPEKTRUM1, SPEKTRUM2, SBUS

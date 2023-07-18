@@ -37,7 +37,7 @@ struct uvos_queue {
 
 #endif /* defined(UVOS_INCLUDE_FREERTOS) */
 
-typedef struct uvos_queue *uvos_queue_ptr_t;
+typedef struct uvos_queue *p_uvos_queue_t;
 
 /*
  * The following functions implement the concept of a queue usable

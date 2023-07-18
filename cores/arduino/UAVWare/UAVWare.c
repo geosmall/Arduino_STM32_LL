@@ -1,5 +1,10 @@
 #include "UAVWare.h"
 
+int UAVWare_set_imu_ranges( MPUGyroAccelSettingsGyroScaleOptions GyroScale, MPUGyroAccelSettingsAccelScaleOptions AccelScale )
+{
+  return UW_imu_set_ranges( GyroScale, AccelScale );
+}
+
 int UAVWare_init( void )
 {
   /* Brings up System using CMSIS functions, initializes periph clock, gpio pins. */
@@ -18,6 +23,7 @@ int UAVWare_init( void )
   }
 
   UW_fs_init();
+  UW_imu_init();
   UW_act_init();
   UW_sched_init();
 

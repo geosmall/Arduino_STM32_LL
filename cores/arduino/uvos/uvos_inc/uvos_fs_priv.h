@@ -45,9 +45,10 @@ struct uvos_fs_driver {
   int32_t ( *file_open )( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode );
   int32_t ( *file_read )( struct uvos_fs_file *fp, void *buf, uint32_t bytes_to_read, uint32_t *bytes_read );
   int32_t ( *file_write )( struct uvos_fs_file *fp, const void *buf, uint32_t bytes_to_write, uint32_t *bytes_written );
-  int32_t ( *file_seek )( struct uvos_fs_file *fp, int32_t offset );
-  uint32_t ( *file_tell )( struct uvos_fs_file *fp );
+  int32_t ( *file_seek )( struct uvos_fs_file *fp, uint32_t offset );
+  int32_t ( *file_tell )( struct uvos_fs_file *fp );
   int32_t ( *file_close )( struct uvos_fs_file *fp );
+  int32_t ( *file_size )( const char *path );
   int32_t ( *remove )( const char *path );
   int32_t ( *dir_open )( struct uvos_fs_dir *dp, const char *path );
   int32_t ( *dir_close )( struct uvos_fs_dir *dp );

@@ -44,7 +44,6 @@
 // #define UVOS_INCLUDE_WDG
 
 /* UVOS sensor interfaces */
-#define UVOS_INCLUDE_MPU
 #define UVOS_INCLUDE_MPU6000
 
 /* UVOS receiver drivers */
