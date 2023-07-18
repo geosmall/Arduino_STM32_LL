@@ -344,8 +344,8 @@ static int32_t UVOS_MPU6000_Config( struct uvos_mpu6000_cfg const *cfg )
     ;
   }
 
-  MPUGyroAccelSettingsData settings;
-  MPUGyroAccelSettingsGet( &settings );
+  IMUGyroAccelSettingsData settings;
+  IMUGyroAccelSettingsGet( &settings );
   if ( settings.isSet ) {
     UVOS_MPU6000_ConfigureRanges(
       UVOS_MPU6000_CONFIG_MAP_GYROSCALE( settings.GyroScale ),

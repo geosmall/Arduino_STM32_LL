@@ -18,7 +18,7 @@ extern "C" {
 
 extern void setup( void );
 extern void loop( void );
-extern int UAVWare_set_imu_ranges( MPUGyroAccelSettingsGyroScaleOptions GyroScale, MPUGyroAccelSettingsAccelScaleOptions AccelScale );
+extern int UAVWare_set_imu_ranges( IMUGyroAccelSettingsGyroScaleOptions GyroScale, IMUGyroAccelSettingsAccelScaleOptions AccelScale );
 extern int UAVWare_init( void );
 
 #ifdef __cplusplus

@@ -1,13 +1,13 @@
 #include <uvos.h>
-#include "mpugyroaccelsettings.h"
+#include "imugyroaccelsettings.h"
 
-static MPUGyroAccelSettingsData mpuSettings = { 0, 0, 0, false };
+static IMUGyroAccelSettingsData mpuSettings = { 0, 0, 0, false };
 
 /**
- * @brief Updates IMU config based on provided MPUGyroAccelSettingsData object
+ * @brief Updates IMU config based on provided IMUGyroAccelSettingsData object
  * @returns 0 if succeed or -1 otherwise
  */
-void MPUGyroAccelSettingsGet( MPUGyroAccelSettingsData *dataOut )
+void IMUGyroAccelSettingsGet( IMUGyroAccelSettingsData *dataOut )
 {
 	UVOS_Assert( dataOut );
 
@@ -17,7 +17,7 @@ void MPUGyroAccelSettingsGet( MPUGyroAccelSettingsData *dataOut )
 	dataOut->isSet = mpuSettings.isSet;
 }
 
-void MPUGyroAccelSettingsSet( const MPUGyroAccelSettingsData *dataIn )
+void IMUGyroAccelSettingsSet( const IMUGyroAccelSettingsData *dataIn )
 {
 	UVOS_Assert( dataIn );
 

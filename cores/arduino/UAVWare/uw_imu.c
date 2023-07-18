@@ -35,11 +35,11 @@ bool UW_imu_init( void )
   return true;
 }
 
-int UW_imu_set_ranges( MPUGyroAccelSettingsGyroScaleOptions GyroScale, MPUGyroAccelSettingsAccelScaleOptions AccelScale )
+int UW_imu_set_ranges( IMUGyroAccelSettingsGyroScaleOptions GyroScale, IMUGyroAccelSettingsAccelScaleOptions AccelScale )
 {
   /* Always use 256Hz HW filter for default */
-  MPUGyroAccelSettingsData settings = { GyroScale, AccelScale, MPUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_256_HZ, false };
-  MPUGyroAccelSettingsSet( &settings );
+  IMUGyroAccelSettingsData settings = { GyroScale, AccelScale, IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_256_HZ, false };
+  IMUGyroAccelSettingsSet( &settings );
   return 0;
 }
 

@@ -1,6 +1,6 @@
 #include "UAVWare.h"
 
-int UAVWare_set_imu_ranges( MPUGyroAccelSettingsGyroScaleOptions GyroScale, MPUGyroAccelSettingsAccelScaleOptions AccelScale )
+int UAVWare_set_imu_ranges( IMUGyroAccelSettingsGyroScaleOptions GyroScale, IMUGyroAccelSettingsAccelScaleOptions AccelScale )
 {
   return UW_imu_set_ranges( GyroScale, AccelScale );
 }
