@@ -81,6 +81,11 @@ void SystemClock_Config( void );
 #define UVOS_SPI_MAX_DEVS      3
 
 // ------------------------
+// Max number of IMU reset tries
+// ------------------------
+#define UVOS_IMU_MAX_TRIES     5
+
+// ------------------------
 // UVOS_WDG
 // ------------------------
 #define UVOS_WATCHDOG_TIMEOUT  500
@@ -141,10 +146,15 @@ extern uint32_t uvos_com_debug_id;
 #define UVOS_COM_DEBUG     (uvos_com_debug_id)
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
-#if defined(UVOS_INCLUDE_FLASH)
-extern uintptr_t uvos_spi_flash_id;
-#define UVOS_FLASH_SPI_PORT (uvos_spi_flash_id)
-#endif /* UVOS_INCLUDE_FLASH */
+// #if defined(UVOS_INCLUDE_FLASH)
+// extern uintptr_t uvos_spi_flash_id;
+// #define UVOS_FLASH_SPI_PORT (uvos_spi_flash_id)
+// #endif /* UVOS_INCLUDE_FLASH */
+
+// #if defined(UVOS_INCLUDE_SDCARD)
+// extern uintptr_t uvos_spi_flash_id;
+// #define UVOS_SDCARD_SPI_PORT (uvos_spi_sdcard_id)
+// #endif /* UVOS_INCLUDE_FLASH */
 
 // -------------------------
 // Packet Handler
@@ -174,27 +184,29 @@ extern uint32_t uvos_packet_handler;
 // #define UVOS_PERIPHERAL_CLOCK
 
 #define UVOS_SYSCLK 168000000
-// Peripherals that belongs to APB1 are:
-// DAC      |PWR        |CAN1,2
+
+// Peripherals that belongs to APB1 (PCLK1):
+// DAC        |PWR          |CAN1,2
 // I2C1,2,3   |UART4,5      |USART3,2
 // I2S3Ext    |SPI3/I2S3    |SPI2/I2S2
-// I2S2Ext    |IWDG       |WWDG
+// I2S2Ext    |IWDG         |WWDG
 // RTC/BKP reg
 // TIM2,3,4,5,6,7,12,13,14
+//
+// Calculated as SYSCLK / APBPresc * (APBPre == 1,2,4,8,16)
+// Default APB1 Prescaler = 4
+#define UVOS_PERIPHERAL_APB1_CLOCK          (UVOS_SYSCLK / 4)
+#define UVOS_PERIPHERAL_APB1_TIMER_CLOCK     UVOS_SYSCLK
 
-// Calculated as SYSCLK / APBPresc * (APBPre == 1 ? 1 : 2)
-// Default APB1 Prescaler = 2
-#define UVOS_PERIPHERAL_APB1_CLOCK   UVOS_SYSCLK / 2
-
-// Peripherals belonging to APB2
+// Peripherals belonging to APB2 (PCLK2)
 // SDIO     |EXTI       |SYSCFG     |SPI1
 // ADC1,2,3
 // USART1,6
 // TIM1,8,9,10,11
 //
-// Default APB2 Prescaler = 1
-//
-#define UVOS_PERIPHERAL_APB2_CLOCK   UVOS_SYSCLK
+// Default APB2 Prescaler = 2, APB2 Timer clock x2 multiplier
+#define UVOS_PERIPHERAL_APB2_CLOCK          (UVOS_SYSCLK / 2)
+#define UVOS_PERIPHERAL_APB2_TIMER_CLOCK     UVOS_SYSCLK
 
 // -------------------------
 // Interrupt Priorities

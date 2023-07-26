@@ -1,26 +1,51 @@
-#define MAIN_USART_REGS                  USART1
-// #define MAIN_USART_REMAP                 GPIO_AF_USART2
-// #define MAIN_USART_IRQ                   USART2_IRQn
-// #define MAIN_USART_RX_GPIO               GPIOA
-// #define MAIN_USART_RX_PIN                GPIO_Pin_3
-// #define MAIN_USART_TX_GPIO               GPIOA
-// #define MAIN_USART_TX_PIN                GPIO_Pin_2
-// Inverter for SBUS handling
-// #define MAIN_USART_INVERTER_GPIO         GPIOC
-// #define MAIN_USART_INVERTER_PIN          GPIO_Pin_15
-// #define MAIN_USART_INVERTER_CLOCK_FUNC   RCC_AHB1PeriphClockCmd
-// #define MAIN_USART_INVERTER_CLOCK_PERIPH RCC_AHB1Periph_GPIOC
 
-#define FLEXI_USART_REGS                 USART6
-#define FLEXI_USART_REMAP                LL_GPIO_AF_8
+/* I/O mapping
+ *      I/O |   PIN     |    Channel    |   Alternate function
+ *      I1  |           |   TIM2_CH3    |   x
+ *      i2  |           |   TIM3_CH4    |   ADC1_9
+ *      I3  |           |   TIM3_CH3    |   ADC1_8
+ *      I4  |           |   TIM3_CH2    |   SPI1_MOSI/ADC1_7
+ *      I5  |           |   TIM3_CH1    |   SPI1_MISO/ADC1_6
+ *      I6  |           |   TIM2_CH1    |   SPI1_SCK/ADC1_5
+ *------------------------------------
+ *      o1  |   PA8     |   TIM1_CH1    |
+ *      o2  |   PA9     |   TIM1_CH2    |   USART1_TX
+ *      o3  |   PA10    |   TIM1_CH3    |   USART1_RX
+ *      o4  |   PB0     |   TIM3_CH3    |   ADC1_8
+ *      o5  |   PB4     |   TIM3_CH1    |   SPI1_MISO
+ *      o6  |   PB5     |   TIM3_CH2    |   SPI1_MOSI
+
+Servo out 1: PA8  - TIM1_CH1 (29)
+Servo out 2: PA9  - TIM1_CH2 (30)
+Servo out 3: PA10 - TIM1_CH3 (31)
+Servo out 4: PB0  - TIM3_CH3 (18)
+Servo out 5: PB4  - TIM3_CH1 (40)
+Servo out 6: PB5  - TIM3_CH2 (41)
+
+ */
+#define MAIN_USART_REGS                  USART2
+#define MAIN_USART_REMAP                 GPIO_AF_USART2
+#define MAIN_USART_IRQ                   USART2_IRQn
+#define MAIN_USART_RX_GPIO               GPIOA
+#define MAIN_USART_RX_PIN                GPIO_Pin_3
+#define MAIN_USART_TX_GPIO               GPIOA
+#define MAIN_USART_TX_PIN                GPIO_Pin_2
+// Inverter for SBUS handling
+#define MAIN_USART_INVERTER_GPIO         GPIOC
+#define MAIN_USART_INVERTER_PIN          GPIO_Pin_15
+#define MAIN_USART_INVERTER_CLOCK_FUNC   RCC_AHB1PeriphClockCmd
+#define MAIN_USART_INVERTER_CLOCK_PERIPH RCC_AHB1Periph_GPIOC
+
+#define FLEXI_USART_REGS                 USART1
+#define FLEXI_USART_REMAP                GPIO_AF_USART1
 #define FLEXI_USART_IRQ                  USART1_IRQn
-#define FLEXI_USART_RX_GPIO              GPIOC
+#define FLEXI_USART_RX_GPIO              GPIOB
 #define FLEXI_USART_RX_PIN               GPIO_Pin_7
-#define FLEXI_USART_TX_GPIO              GPIOC
+#define FLEXI_USART_TX_GPIO              GPIOB
 #define FLEXI_USART_TX_PIN               GPIO_Pin_6
 // ReceiverPort pin 3
-// #define FLEXI_USART_DTR_GPIO             GPIOB
-// #define FLEXI_USART_DTR_PIN              GPIO_Pin_10
+#define FLEXI_USART_DTR_GPIO             GPIOB
+#define FLEXI_USART_DTR_PIN              GPIO_Pin_10
 
 #if defined(UVOS_INCLUDE_LED)
 
@@ -30,7 +55,7 @@ static const struct uvos_gpio uvos_leds[] = {
     .pin               =             {
       .gpio = GPIOB,
       .init =             {
-        .Pin   = LL_GPIO_PIN_5,
+        .Pin   = LL_GPIO_PIN_8,
         .Speed = LL_GPIO_SPEED_FREQ_LOW,
         .Mode  = LL_GPIO_MODE_OUTPUT,
         .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -43,7 +68,7 @@ static const struct uvos_gpio uvos_leds[] = {
     .pin               =             {
       .gpio = GPIOB,
       .init =             {
-        .Pin   = LL_GPIO_PIN_4,
+        .Pin   = LL_GPIO_PIN_9,
         .Speed = LL_GPIO_SPEED_FREQ_LOW,
         .Mode  = LL_GPIO_MODE_OUTPUT,
         .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -65,8 +90,8 @@ static const struct uvos_gpio_cfg uvos_led_cfg = {
 #include <uvos_spi_priv.h>
 
 /*
- * Gyro SPI Interface
- * Used for MPU6000 gyro and accelerometer
+ * SPI1 Interface
+ * Used for Invensense based gyro and accelerometer
  */
 void UVOS_SPI_gyro_irq_handler( void );
 void DMA2_Stream2_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_gyro_irq_handler" ) ) );
@@ -90,7 +115,7 @@ static const struct uvos_spi_cfg uvos_spi_gyro_cfg = {
     .irq                                       = {
       .flags = ( DMA_LISR_TCIF2 | DMA_LISR_TEIF2 | DMA_LISR_HTIF2 ),
       .init  = {
-        .NVIC_IRQChannel    = DMA2_Stream0_IRQn,
+        .NVIC_IRQChannel    = DMA2_Stream2_IRQn,
         .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd = ENABLE,
@@ -99,7 +124,7 @@ static const struct uvos_spi_cfg uvos_spi_gyro_cfg = {
 
     .rx                                        = {
       .DMAx = DMA2,
-      .stream = LL_DMA_STREAM_0,
+      .stream = LL_DMA_STREAM_2,
       .init    = {
         .Channel = LL_DMA_CHANNEL_3,
         .PeriphOrM2MSrcAddress = ( uint32_t ) & ( SPI1->DR ),
@@ -196,13 +221,13 @@ void UVOS_SPI_gyro_irq_handler( void )
 }
 
 /*
- * Flash SPI Interface
- * Used for Flash chip
+ * SPI2 Interface
+ * Used for SPI based storage (SPI Flash, SD Card)
  */
-void UVOS_SPI_telem_flash_irq_handler( void );
-void DMA1_Stream0_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_telem_flash_irq_handler" ) ) );
-void DMA1_Stream5_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_telem_flash_irq_handler" ) ) );
-static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
+void UVOS_SPI_storage_irq_handler( void );
+void DMA1_Stream0_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_storage_irq_handler" ) ) );
+void DMA1_Stream5_IRQHandler( void ) __attribute__( ( alias( "UVOS_SPI_storage_irq_handler" ) ) );
+static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
   .regs  = SPI3,
   .init  = {
     .TransferDirection = LL_SPI_FULL_DUPLEX,
@@ -321,11 +346,11 @@ static const struct uvos_spi_cfg uvos_spi_telem_flash_cfg = {
   },
 };
 
-static uint32_t uvos_spi_telem_flash_id;
-void UVOS_SPI_telem_flash_irq_handler( void )
+static uint32_t uvos_spi_storage_id;
+void UVOS_SPI_storage_irq_handler( void )
 {
   /* Call into the generic code to handle the IRQ for this specific device */
-  UVOS_SPI_IRQ_Handler( uvos_spi_telem_flash_id );
+  UVOS_SPI_IRQ_Handler( uvos_spi_storage_id );
 }
 
 #endif /* UVOS_INCLUDE_SPI */
@@ -414,6 +439,54 @@ static const struct uvos_usart_cfg uvos_usart_main_cfg = {
  * FLEXI PORT
  */
 static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
+  .regs  = USART2,
+  .init  = {
+    .BaudRate            = 57600,
+    .DataWidth           = LL_USART_DATAWIDTH_8B,
+    .StopBits            = LL_USART_STOPBITS_1,
+    .Parity              = LL_USART_PARITY_NONE,
+    .TransferDirection   = LL_USART_DIRECTION_TX_RX,
+    .HardwareFlowControl = LL_USART_HWCONTROL_NONE,
+  },
+  .irq                                       = {
+    .init                                  = {
+      .NVIC_IRQChannel    = USART2_IRQn,
+      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
+      .NVIC_IRQChannelSubPriority        = 0,
+      .NVIC_IRQChannelCmd = ENABLE,
+    },
+  },
+  .rx                                        = {
+    .gpio = GPIOA,
+    .init = {
+      .Pin   = LL_GPIO_PIN_3,
+      .Mode = LL_GPIO_MODE_ALTERNATE,
+      .Speed = LL_GPIO_SPEED_FREQ_LOW,
+      .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
+      .Pull = LL_GPIO_PULL_UP,
+      .Alternate = LL_GPIO_AF_7,
+    },
+  },
+  .tx                                        = {
+    .gpio = GPIOA,
+    .init = {
+      .Pin   = LL_GPIO_PIN_2,
+      .Mode = LL_GPIO_MODE_ALTERNATE,
+      .Speed = LL_GPIO_SPEED_FREQ_LOW,
+      .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
+      .Pull = LL_GPIO_PULL_UP,
+      .Alternate = LL_GPIO_AF_7,
+    },
+  },
+};
+
+#endif /* UVOS_INCLUDE_COM_FLEXI */
+
+#ifdef UVOS_INCLUDE_DEBUG_CONSOLE
+/*
+ * DEBUG PORT
+ */
+static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   .regs  = USART6,
   .init  = {
     .BaudRate            = 57600,
@@ -455,11 +528,11 @@ static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
   },
 };
 
-#endif /* UVOS_INCLUDE_COM_FLEXI */
+#endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
 #if defined(UVOS_INCLUDE_IBUS)
 /*
- * IBUS on Main Port USART
+ * IBUS on Flexi Port USART
  */
 #include <uvos_ibus_priv.h>
 
@@ -482,9 +555,9 @@ static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
     },
   },
   .rx                                        = {
-    .gpio = GPIOA,
+    .gpio = GPIOB,
     .init = {
-      .Pin   = LL_GPIO_PIN_10,
+      .Pin   = LL_GPIO_PIN_7,
       .Mode = LL_GPIO_MODE_ALTERNATE,
       .Speed = LL_GPIO_SPEED_FREQ_LOW,
       .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -493,13 +566,13 @@ static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
     },
   },
   .tx                                        = {
-    .gpio = GPIOA,
+    .gpio = GPIOB,
     .init = {
-      .Pin   = LL_GPIO_PIN_9,
-      .Mode = LL_GPIO_MODE_ALTERNATE,
+      .Pin   = LL_GPIO_PIN_6,
+      .Mode = LL_GPIO_MODE_OUTPUT,
       .Speed = LL_GPIO_SPEED_FREQ_LOW,
       .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
-      .Pull = LL_GPIO_PULL_UP,
+      .Pull = LL_GPIO_PULL_NO,
       .Alternate = LL_GPIO_AF_7,
     },
   },
@@ -651,19 +724,6 @@ static const struct uvos_tim_clock_cfg tim_11_cfg = {
   },
 };
 
-static const struct uvos_tim_clock_cfg tim_12_cfg = {
-  .timer = TIM12,
-  .time_base_init                            = &tim_2_3_4_5_12_time_base,
-  .irq   = {
-    .init                                  = {
-      .NVIC_IRQChannel    = TIM8_BRK_TIM12_IRQn,
-      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
-      .NVIC_IRQChannelSubPriority        = 0,
-      .NVIC_IRQChannelCmd = ENABLE,
-    },
-  },
-};
-
 /**
  * Pios servo configuration structures
  * Using TIM2, TIM3, TIM5, TIM9
@@ -786,8 +846,35 @@ const struct uvos_servo_cfg uvos_servo_cfg_out = {
   .num_channels = UVOS_SERVOPORT_ALL_PINS_PWMOUT,
 };
 
+/**
+ * UVOS sched configuration structures
+ * Using TIM11
+ */
+#include <uvos_sched_priv.h>
+static const struct uvos_tim_channel uvos_tim_sched_timer_only[] = {
+  {
+    .timer = TIM11,
+    .timer_chan = 0,
+    .pin   = { 0 },
+  },
+};
+
+const struct uvos_sched_cfg uvos_sched_cfg_out = {
+  .tim_base_init = tim_11_time_base,
+  .channels      = uvos_tim_sched_timer_only,
+  .num_channels  = 1,
+};
+
+
 #if defined(UVOS_INCLUDE_RCVR)
 
-#include "uvos_rcvr_priv.h"
+#include <uvos_rcvr_priv.h>
 
 #endif /* UVOS_INCLUDE_RCVR */
+
+
+#if defined(UVOS_INCLUDE_FS)
+
+#include <uvos_fs_priv.h>
+
+#endif /* UVOS_INCLUDE_FS */

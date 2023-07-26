@@ -99,7 +99,7 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.variant=STM32F4xx/F411RE_ICM42
 Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
 # NUCLEO_F405RG board with MPU6000
-Nucleo_64.menu.pnum.NUCLEO_F405RG=Nucleo F405RG W/ MPU6000
+Nucleo_64.menu.pnum.NUCLEO_F405RG=Nucleo F405RG W/ MPU6000 (no INT)
 Nucleo_64.menu.pnum.NUCLEO_F405RG.node="NODE_F405RG,NUCLEO"
 Nucleo_64.menu.pnum.NUCLEO_F405RG.upload.maximum_size=1048576
 Nucleo_64.menu.pnum.NUCLEO_F405RG.upload.maximum_data_size=131072

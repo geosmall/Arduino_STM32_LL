@@ -6,8 +6,6 @@
 
 #define UVOS_MAIN_LOOP_RATE 1000
 
-// #define SKIP_MPU_EXISTS_CHECK
-
 /*
  * Below is a complete list of UVOS configurable options.
  * Please do not remove or rearrange them. Only comment out

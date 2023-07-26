@@ -9,7 +9,7 @@
 static int32_t UVOS_SPIF_MountFS( void );
 static int32_t UVOS_SPIF_UnmountFS( void );
 static bool UVOS_SPIF_IsMounted( void );
-static int32_t UVOS_SPIF_Format( void );
+// static int32_t UVOS_SPIF_Format( void );
 static int32_t UVOS_SPIF_GetVolInfo( struct uvos_fs_vol_info *vol_info );
 
 static int32_t UVOS_SPIF_File_Open( struct uvos_fs_file *fp, const char *path, uvos_fopen_mode_t mode );
@@ -240,7 +240,7 @@ static bool UVOS_SPIF_IsMounted( void )
  * return 0 No errors
  * return -1 SPI Flash format of LittleFS unsuccessful
  */
-static int32_t UVOS_SPIF_Format( void )
+int32_t UVOS_SPIF_Format( void )
 {
   /* Format the file system (clobbers littlefs object, leaves file system mounted) */
   lfs_res = lfs_format( &FS_lfs, &FS_cfg );

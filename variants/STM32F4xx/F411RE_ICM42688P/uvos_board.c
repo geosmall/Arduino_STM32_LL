@@ -54,15 +54,63 @@ static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
 
 #endif // defined( UVOS_INCLUDE_EXTI )
 
-static const uvos_mpu_cfg_t uvos_mpu_cfg = {
-  .expected_device_id = Invensense_ICM42688,
-  // .exti_cfg   = &uvos_exti_mpu_cfg,
-  .default_samplerate_hz = UVOS_MAIN_LOOP_RATE,
-  .default_gyro_range    = UVOS_GYRO_RANGE_2000DPS,
-  .default_accel_range   = UVOS_ACCEL_RANGE_4G,
-  .fast_prescaler        = UVOS_SPI_PRESCALER_16,  // 96MHz / 16 = 6MHz
-  .std_prescaler         = UVOS_SPI_PRESCALER_128, // 96MHz / 128 = 0.75MHz
+/**
+ * Configuration for the MPU6000 chip
+ */
+#if defined(UVOS_INCLUDE_MPU6000)
+#include "uvos_mpu6000.h"
+#include "uvos_mpu6000_config.h"
+static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
+  .vector = UVOS_MPU6000_IRQHandler,
+  .line = LL_EXTI_LINE_4,
+  .pin = {
+    .gpio = GPIOC,
+    .init = {
+      .Pin   = LL_GPIO_PIN_4,
+      .Mode = LL_GPIO_MODE_INPUT,
+      .Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH,
+      .OutputType = LL_GPIO_OUTPUT_OPENDRAIN,
+      .Pull = LL_GPIO_PULL_NO,
+    },
+  },
+  .irq = {
+    .init = {
+      .NVIC_IRQChannel = EXTI4_IRQn,
+      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
+      .NVIC_IRQChannelSubPriority = 0,
+      .NVIC_IRQChannelCmd = DISABLE,
+    },
+  },
+  .exti = {
+    .init = {
+      .Line_0_31    = LL_EXTI_LINE_4, // matches above GPIO pin
+      .LineCommand  = DISABLE,
+      .Mode         = LL_EXTI_MODE_IT,
+      .Trigger      = LL_EXTI_TRIGGER_RISING,
+    },
+  },
 };
+
+static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
+  .exti_cfg   = &uvos_exti_mpu6000_cfg,
+  .Fifo_store = UVOS_MPU6000_FIFO_TEMP_OUT | UVOS_MPU6000_FIFO_GYRO_X_OUT | UVOS_MPU6000_FIFO_GYRO_Y_OUT | UVOS_MPU6000_FIFO_GYRO_Z_OUT,
+  // Clock at 8 khz
+  .Smpl_rate_div_no_dlp = 0,
+  // with dlp on output rate is 1000Hz
+  .Smpl_rate_div_dlp    = 0,
+  .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
+  .interrupt_en   = 0,
+  .User_ctl       = UVOS_MPU6000_USERCTL_DIS_I2C,
+  .Pwr_mgmt_clk   = UVOS_MPU6000_PWRMGMT_PLL_Z_CLK,
+  .accel_range    = UVOS_MPU6000_ACCEL_8G,
+  .gyro_range     = UVOS_MPU6000_SCALE_2000_DEG,
+  .filter         = UVOS_MPU6000_LOWPASS_256_HZ,
+  .orientation    = UVOS_MPU6000_TOP_0DEG,
+  .fast_prescaler = UVOS_SPI_PRESCALER_16,
+  .std_prescaler  = UVOS_SPI_PRESCALER_128,
+  .max_downsample = 20,
+};
+#endif /* UVOS_INCLUDE_MPU6000 */
 
 /* One slot per selectable receiver group.
  *  eg. PWM, PPM, GCS, SPEKTRUM1, SPEKTRUM2, SBUS
@@ -270,12 +318,14 @@ int32_t UVOS_Board_Init( void )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
-
-  if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
-#if !defined( SKIP_MPU_EXISTS_CHECK )
-    return -4;
-#endif // !defined( SKIP_MPU_EXISTS_ASSERT )
-  }
+#if defined(UVOS_INCLUDE_MPU6000)
+  /* Initialize IMU, initial settings per uvos_mpu6000_cfg defined above */
+  UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
+  /* Configure settings */
+  // UVOS_MPU6000_CONFIG_Configure();
+  /* Register MPU6000 as a sensor via UVOS_SENSORS_Register() */
+  UVOS_MPU6000_Register();
+#endif
 
   return 0;
 }

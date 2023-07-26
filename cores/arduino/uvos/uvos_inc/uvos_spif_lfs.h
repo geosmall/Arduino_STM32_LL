@@ -15,5 +15,6 @@ typedef struct {
 
 /* Prototypes */
 extern int32_t UVOS_SPIF_Init( uint32_t spi_id );
+extern int32_t UVOS_SPIF_Format( void );
 
 #endif /* UVOS_SPIF_H */
