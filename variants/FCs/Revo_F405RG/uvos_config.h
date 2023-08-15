@@ -1,8 +1,8 @@
 #ifndef UVOS_CONFIG_H
 #define UVOS_CONFIG_H
 
-/* FC Revo F405RG series */
-#define REVO_F405RG
+/* ST Nucleo F405RG series */
+#define NUCLEO_F405RG
 
 #define UVOS_MAIN_LOOP_RATE 1000
 
@@ -42,8 +42,7 @@
 // #define UVOS_INCLUDE_WDG
 
 /* UVOS sensor interfaces */
-#define UVOS_INCLUDE_MPU
-// #define UVOS_MPU_ACCEL
+#define UVOS_INCLUDE_MPU6000
 
 /* UVOS receiver drivers */
 // #define UVOS_INCLUDE_DSM
@@ -56,6 +55,9 @@
 /* UVOS common peripherals */
 #define UVOS_INCLUDE_LED
 #define UVOS_INCLUDE_SERVO
+
+/* UVOS file system persistent storage */
+#define UVOS_INCLUDE_FS
 #define UVOS_INCLUDE_FLASH
 // #define UVOS_INCLUDE_SDCARD
 #define UVOS_FLASHFS_LOGFS_MAX_DEVS 5

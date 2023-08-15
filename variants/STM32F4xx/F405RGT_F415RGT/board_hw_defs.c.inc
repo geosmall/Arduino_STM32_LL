@@ -555,9 +555,9 @@ static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
     },
   },
   .rx                                        = {
-    .gpio = GPIOB,
+    .gpio = GPIOA,
     .init = {
-      .Pin   = LL_GPIO_PIN_7,
+      .Pin   = LL_GPIO_PIN_10,
       .Mode = LL_GPIO_MODE_ALTERNATE,
       .Speed = LL_GPIO_SPEED_FREQ_LOW,
       .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
@@ -566,9 +566,9 @@ static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
     },
   },
   .tx                                        = {
-    .gpio = GPIOB,
+    .gpio = GPIOA,
     .init = {
-      .Pin   = LL_GPIO_PIN_6,
+      .Pin   = LL_GPIO_PIN_9,
       .Mode = LL_GPIO_MODE_OUTPUT,
       .Speed = LL_GPIO_SPEED_FREQ_LOW,
       .OutputType = LL_GPIO_OUTPUT_PUSHPULL,

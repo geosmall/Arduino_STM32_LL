@@ -231,7 +231,7 @@ extern uint32_t uvos_packet_handler;
 // See also uvos_board.c
 // ------------------------
 #define UVOS_RCVR_MAX_DEVS           3
-#define UVOS_RCVR_MAX_CHANNELS       12
+#define UVOS_RCVR_MAX_CHANNELS       10
 #define UVOS_GCSRCVR_TIMEOUT_MS      100
 #define UVOS_RFM22B_RCVR_TIMEOUT_MS  200
 #define UVOS_OPLINK_RCVR_TIMEOUT_MS  100

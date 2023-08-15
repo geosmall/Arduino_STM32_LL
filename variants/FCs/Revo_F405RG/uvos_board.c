@@ -14,13 +14,6 @@
  */
 #include "board_hw_defs.c.inc"
 
-/**
- * Configuration for the MPU chip
- */
-#if defined(UVOS_INCLUDE_MPU)
-#include "uvos_mpu.h"
-// #include "uvos_mpu_config.h"
-
 #if defined( UVOS_INCLUDE_EXTI )
 
 bool UVOS_USER_BTN_IRQHandler( void )
@@ -61,17 +54,63 @@ static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
 
 #endif // defined( UVOS_INCLUDE_EXTI )
 
-static const uvos_mpu_cfg_t uvos_mpu_cfg = {
-  .expected_device_id = Invensense_MPU6000,
-  // .exti_cfg   = &uvos_exti_mpu_cfg,
-  .default_samplerate  = UVOS_MAIN_LOOP_RATE,
-  .default_gyro_range  = UVOS_GYRO_RANGE_2000DPS,
-  .default_accel_range = UVOS_ACCEL_RANGE_4G,
-  .fast_prescaler      = UVOS_SPI_PRESCALER_16,  // 96MHz / 16 = 6MHz
-  .std_prescaler       = UVOS_SPI_PRESCALER_128, // 96MHz / 128 = 0.75MHz
+/**
+ * Configuration for the MPU6000 chip
+ */
+#if defined(UVOS_INCLUDE_MPU6000)
+#include "uvos_mpu6000.h"
+#include "uvos_mpu6000_config.h"
+static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
+  .vector = UVOS_MPU6000_IRQHandler,
+  .line = LL_EXTI_LINE_4,
+  .pin = {
+    .gpio = GPIOC,
+    .init = {
+      .Pin   = LL_GPIO_PIN_4,
+      .Mode = LL_GPIO_MODE_INPUT,
+      .Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH,
+      .OutputType = LL_GPIO_OUTPUT_OPENDRAIN,
+      .Pull = LL_GPIO_PULL_NO,
+    },
+  },
+  .irq = {
+    .init = {
+      .NVIC_IRQChannel = EXTI4_IRQn,
+      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
+      .NVIC_IRQChannelSubPriority = 0,
+      .NVIC_IRQChannelCmd = DISABLE,
+    },
+  },
+  .exti = {
+    .init = {
+      .Line_0_31    = LL_EXTI_LINE_4, // matches above GPIO pin
+      .LineCommand  = DISABLE,
+      .Mode         = LL_EXTI_MODE_IT,
+      .Trigger      = LL_EXTI_TRIGGER_RISING,
+    },
+  },
 };
 
-#endif /* UVOS_INCLUDE_MPU */
+static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
+  .exti_cfg   = &uvos_exti_mpu6000_cfg,
+  .Fifo_store = UVOS_MPU6000_FIFO_TEMP_OUT | UVOS_MPU6000_FIFO_GYRO_X_OUT | UVOS_MPU6000_FIFO_GYRO_Y_OUT | UVOS_MPU6000_FIFO_GYRO_Z_OUT,
+  // Clock at 8 khz
+  .Smpl_rate_div_no_dlp = 0,
+  // with dlp on output rate is 1000Hz
+  .Smpl_rate_div_dlp    = 0,
+  .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
+  .interrupt_en   = 0,
+  .User_ctl       = UVOS_MPU6000_USERCTL_DIS_I2C,
+  .Pwr_mgmt_clk   = UVOS_MPU6000_PWRMGMT_PLL_Z_CLK,
+  .accel_range    = UVOS_MPU6000_ACCEL_8G,
+  .gyro_range     = UVOS_MPU6000_SCALE_2000_DEG,
+  .filter         = UVOS_MPU6000_LOWPASS_256_HZ,
+  .orientation    = UVOS_MPU6000_TOP_0DEG,
+  .fast_prescaler = UVOS_SPI_PRESCALER_16,
+  .std_prescaler  = UVOS_SPI_PRESCALER_128,
+  .max_downsample = 20,
+};
+#endif /* UVOS_INCLUDE_MPU6000 */
 
 /* One slot per selectable receiver group.
  *  eg. PWM, PPM, GCS, SPEKTRUM1, SPEKTRUM2, SBUS
@@ -93,10 +132,6 @@ uint32_t uvos_rcvr_group_map[ UVOS_RCVR_CHANNELGROUPS_NONE ];
 #define UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN 64
 uint32_t uvos_com_debug_id;
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
-
-#if defined(UVOS_INCLUDE_FLASH)
-uintptr_t uvos_spi_flash_id;
-#endif /* UVOS_INCLUDE_FLASH */
 
 // uint32_t uvos_com_gps_id       = 0;
 // uint32_t uvos_com_telem_usb_id = 0;
@@ -178,8 +213,9 @@ static void UVOS_Board_configure_ibus( const struct uvos_usart_cfg *usart_cfg )
  * initializes all the core subsystems on this specific hardware
  * called from uavware.c
  */
-WEAK int32_t UVOS_Board_Init( void )
+int32_t UVOS_Board_Init( void )
 {
+  int32_t ret;
 
 #if defined( UVOS_INCLUDE_LED )
   const struct uvos_gpio_cfg *led_cfg  = &uvos_led_cfg;
@@ -187,63 +223,62 @@ WEAK int32_t UVOS_Board_Init( void )
   UVOS_LED_Init( led_cfg );
 #endif /* UVOS_INCLUDE_LED */
 
+#if defined( UVOS_INCLUDE_DEBUG_CONSOLE )
+  UVOS_Board_configure_com( &uvos_usart_debug_cfg,
+                            UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
+                            UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
+                            &uvos_usart_com_driver, &uvos_com_debug_id );
+#endif
+
   /* Set up the SPI interface to the gyro/acelerometer */
   if ( UVOS_SPI_Init( &uvos_spi_gyro_id, &uvos_spi_gyro_cfg ) ) {
     return -1;
   }
 
   /* Set up the SPI interface to the flash */
-  if ( UVOS_SPI_Init( &uvos_spi_telem_flash_id, &uvos_spi_telem_flash_cfg ) ) {
+  if ( UVOS_SPI_Init( &uvos_spi_storage_id, &uvos_spi_storage_cfg ) ) {
     return -1;
   }
 
 #if defined( UVOS_INCLUDE_FLASH )
-  /* Connect flash to the appropriate interface and configure it */
-  // uintptr_t flash_id;
 
-  // Initialize the external USER flash
-  // if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-  if ( UVOS_Flash_Jedec_Init( &uvos_spi_flash_id, uvos_spi_telem_flash_id, 0 ) ) {
+  /* Enable and mount the SPI Flash, and retrieve pointer to interface driver */
+  ret = UVOS_SPIF_Init( uvos_spi_storage_id );
+  if ( ret < 0 ) {
     return -2;
   }
 
+// #define ERASE_SYSTEM_FLASH
 #if defined( ERASE_SYSTEM_FLASH )
-  UVOS_Flash_Jedec_EraseChip( uvos_spi_flash_id );
+  extern uvos_spif_jedec_id;
+  UVOS_Flash_Jedec_EraseChip( uvos_spif_jedec_id );
+  ret = UVOS_SPIF_Format();
+  if ( ret < 0 ) {
+    return -2;
+  }
 #endif // defined( ERASE_SYSTEM_FLASH )
 
-  // if ( UW_fs_init( flash_id ) ) {
-  // if ( UW_fs_init( uvos_spi_flash_id ) ) {
-  //   return -3;
-  // }
+  /* Set up the file sysytem interface */
+  if ( UVOS_FS_Init( &uvos_fs_spif_driver ) ) {
+    return -3;
+  }
 
 #endif // defined( UVOS_INCLUDE_FLASH )
 
-#if 0 // GLS
-// #if defined( UVOS_INCLUDE_FLASH )
-  /* Connect flash to the appropriate interface and configure it */
-  uintptr_t flash_id;
+#if defined( UVOS_INCLUDE_SDCARD )
 
-// Initialize the external USER flash
-  if ( UVOS_Flash_Jedec_Init( &flash_id, uvos_spi_telem_flash_id, 0 ) ) {
-    UVOS_DEBUG_Assert( 0 );
+  /* Enable and mount the SDCard */
+  ret = UVOS_SDCARD_Init( uvos_spi_storage_id );
+  if ( ret < 0 ) {
+    return -2;
   }
 
-  // UVOS_Flash_Jedec_EraseChip( flash_id );
-#if defined( ERASE_SYSTEM_FLASH )
-  UVOS_FLASHFS_Format( uvos_uavo_settings_fs_id );
-#endif // defined( ERASE_SYSTEM_FLASH )
-#if defined( ERASE_USER_FLASH )
-  UVOS_FLASHFS_Format( uvos_user_fs_id );
-#endif // defined( ERASE_USER_FLASH )
-
-  if ( UVOS_FLASHFS_Logfs_Init( &uvos_uavo_settings_fs_id, &flashfs_external_system_cfg, &uvos_jedec_flash_driver, flash_id ) ) {
-    UVOS_DEBUG_Assert( 0 );
+  /* Set up the file sysytem interface */
+  if ( UVOS_FS_Init( &uvos_fs_sdcard_driver ) ) {
+    return -3;
   }
 
-  if ( UVOS_FLASHFS_Logfs_Init( &uvos_user_fs_id, &flashfs_external_user_cfg, &uvos_jedec_flash_driver, flash_id ) ) {
-    UVOS_DEBUG_Assert( 0 );
-  }
-#endif /* if defined(UVOS_INCLUDE_FLASH) */
+#endif // defined( UVOS_INCLUDE_SDCARD )
 
 #if defined( UVOS_INCLUDE_EXTI )
   UVOS_EXTI_Init( &uvos_exti_user_btn_cfg );
@@ -253,44 +288,42 @@ WEAK int32_t UVOS_Board_Init( void )
   UVOS_RTC_Init( &uvos_rtc_main_cfg );
 #endif
 
-  /* Set up pulse timers */
-  // UVOS_TIM_InitClock( &tim_1_cfg );
-  UVOS_TIM_InitClock( &tim_2_cfg );
-  UVOS_TIM_InitClock( &tim_3_cfg );
-  UVOS_TIM_InitClock( &tim_5_cfg );
-  UVOS_TIM_InitClock( &tim_9_cfg );
-  // UVOS_TIM_InitClock( &tim_10_cfg );
-  // UVOS_TIM_InitClock( &tim_11_cfg );
-
   /* Set up scheduler timer */
   UVOS_TIM_InitClock( &tim_11_cfg );
 
-#if defined( UVOS_INCLUDE_DEBUG_CONSOLE )
-  UVOS_Board_configure_com( &uvos_usart_flexi_cfg,
-                            UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
-                            UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
-                            &uvos_usart_com_driver, &uvos_com_debug_id );
-#endif
+#if defined( UVOS_INCLUDE_SCHED )
+  /* Set up scheduler */
+  UVOS_SCHED_Init( &uvos_sched_cfg_out );
+#endif // defined( UVOS_INCLUDE_SCHED )
 
-#if defined( UVOS_INCLUDE_IBUS )
-  UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
-#endif // defined( UVOS_INCLUDE_IBUS )
+  /* Set up pulse timers */
+  UVOS_TIM_InitClock( &tim_1_cfg );
+  // UVOS_TIM_InitClock( &tim_2_cfg );
+  UVOS_TIM_InitClock( &tim_3_cfg );
+  // UVOS_TIM_InitClock( &tim_5_cfg );
+  // UVOS_TIM_InitClock( &tim_9_cfg );
+  // UVOS_TIM_InitClock( &tim_10_cfg );
+  // UVOS_TIM_InitClock( &tim_11_cfg );
 
 #if !defined( UVOS_ENABLE_DEBUG_PINS )
-  // uvos_servo_cfg points to the correct configuration based on input port settings
+  /* uvos_servo_cfg points to the correct configuration based on input port settings */
   UVOS_Servo_Init( &uvos_servo_cfg_out );
 #else
   UVOS_DEBUG_Init( uvos_tim_servoport_all_pins, NELEMENTS( uvos_tim_servoport_all_pins ) );
 #endif // !defined( UVOS_ENABLE_DEBUG_PINS )
 
-  if ( UVOS_MPU_Init( uvos_spi_gyro_id, 0, &uvos_mpu_cfg ) ) {
-#if !defined( SKIP_MPU_EXISTS_CHECK )
-    return -4;
-#endif // !defined( SKIP_MPU_EXISTS_ASSERT )
-  }
+#if defined( UVOS_INCLUDE_IBUS )
+  UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
+#endif // defined( UVOS_INCLUDE_IBUS )
 
-  UVOS_SCHED_init( tim_11_cfg.timer );
+#if defined(UVOS_INCLUDE_MPU6000)
+  /* Initialize IMU, initial settings per uvos_mpu6000_cfg defined above */
+  UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
+  /* Configure settings */
+  // UVOS_MPU6000_CONFIG_Configure();
+  /* Register MPU6000 as a sensor via UVOS_SENSORS_Register() */
+  UVOS_MPU6000_Register();
+#endif
 
   return 0;
-
 }

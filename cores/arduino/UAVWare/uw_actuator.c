@@ -50,15 +50,15 @@ static void UW_act_update_rates( void )
     switch ( uvos_actuator_bank_mode[ i ] ) {
     case ACTUATOR_BANKMODE_ONESHOT125:
       freq[ i ]  = 200; // Value must be small enough so CCr isn't update until the UVOS_Servo_Update() is called
-      clock[ i ] = ACTUATOR_ONESHOT_CLOCK; // Setup an 12MHz timer clock
+      clock[ i ] = ACTUATOR_ONESHOT_CLOCK; // Setup as 12MHz timer clock
       break;
     case ACTUATOR_BANKMODE_PWMSYNC:
       freq[ i ]  = 200;
-      clock[ i ] = ACTUATOR_PWM_CLOCK;
+      clock[ i ] = ACTUATOR_PWM_CLOCK; // Setup as 1MHz timer clock
       break;
     default: // PWM
       freq[ i ]  = UVOS_SERVO_UPDATE_HZ;
-      clock[ i ] = ACTUATOR_PWM_CLOCK;
+      clock[ i ] = ACTUATOR_PWM_CLOCK; // Setup as 1MHz timer clock
       break;
     }
   }

@@ -26,13 +26,13 @@ struct uvos_ibus_dev {
  * @brief Allocates a driver instance
  * @retval uvos_ibus_dev pointer on success, NULL on failure
  */
-static struct uvos_ibus_dev * UVOS_IBUS_Alloc( void );
+static struct uvos_ibus_dev *UVOS_IBUS_Alloc( void );
 /**
  * @brief Validate a driver instance
  * @param[in] dev device driver instance pointer
  * @retval true on success, false on failure
  */
-static bool UVOS_IBUS_Validate( const struct uvos_ibus_dev * ibus_dev );
+static bool UVOS_IBUS_Validate( const struct uvos_ibus_dev *ibus_dev );
 /**
  * @brief Read a channel from the last received frame
  * @param[in] id Driver instance
@@ -45,7 +45,7 @@ static int32_t UVOS_IBUS_Read( uint32_t id, uint8_t channel );
  * @param[in] dev Driver instance
  * @param[in] value channel value
  */
-static void UVOS_IBUS_SetAllChannels( struct uvos_ibus_dev * ibus_dev, uint16_t value );
+static void UVOS_IBUS_SetAllChannels( struct uvos_ibus_dev *ibus_dev, uint16_t value );
 /**
  * @brief Serial receive callback
  * @param[in] context Driver instance handle
@@ -55,18 +55,18 @@ static void UVOS_IBUS_SetAllChannels( struct uvos_ibus_dev * ibus_dev, uint16_t 
  * @param[out] task_woken Did we awake a task?
  * @retval Number of bytes consumed from the buffer
  */
-static uint16_t UVOS_IBUS_Receive( uint32_t context, uint8_t * buf, uint16_t buf_len,
-                                   uint16_t * headroom, bool * task_woken );
+static uint16_t UVOS_IBUS_Receive( uint32_t context, uint8_t *buf, uint16_t buf_len,
+                                   uint16_t *headroom, bool *task_woken );
 /**
  * @brief Reset the internal receive buffer state
  * @param[in] ibus_dev device driver instance pointer
  */
-static void UVOS_IBUS_ResetBuffer( struct uvos_ibus_dev * ibus_dev );
+static void UVOS_IBUS_ResetBuffer( struct uvos_ibus_dev *ibus_dev );
 /**
  * @brief Unpack a frame from the internal receive buffer to the channel buffer
  * @param[in] ibus_dev device driver instance pointer
  */
-static void UVOS_IBUS_UnpackFrame( struct uvos_ibus_dev * ibus_dev );
+static void UVOS_IBUS_UnpackFrame( struct uvos_ibus_dev *ibus_dev );
 /**
  * @brief RTC tick callback
  * @param[in] context Driver instance handle
@@ -79,9 +79,9 @@ const struct uvos_rcvr_driver uvos_ibus_rcvr_driver = {
 };
 
 
-static struct uvos_ibus_dev * UVOS_IBUS_Alloc( void )
+static struct uvos_ibus_dev *UVOS_IBUS_Alloc( void )
 {
-  struct uvos_ibus_dev * ibus_dev;
+  struct uvos_ibus_dev *ibus_dev;
 
   ibus_dev = ( struct uvos_ibus_dev * )UVOS_malloc( sizeof( *ibus_dev ) );
 
@@ -95,20 +95,25 @@ static struct uvos_ibus_dev * UVOS_IBUS_Alloc( void )
   return ibus_dev;
 }
 
-static bool UVOS_IBUS_Validate( const struct uvos_ibus_dev * ibus_dev )
+static bool UVOS_IBUS_Validate( const struct uvos_ibus_dev *ibus_dev )
 {
   return ibus_dev && ibus_dev->magic == UVOS_IBUS_MAGIC;
 }
 
-int32_t UVOS_IBUS_Init( uint32_t * ibus_id, const struct uvos_com_driver * driver, uint32_t lower_id )
+
+struct uvos_ibus_dev *ibus_dev_saved_debug_temp_ptr;
+
+int32_t UVOS_IBUS_Init( uint32_t *ibus_id, const struct uvos_com_driver *driver, uint32_t lower_id )
 {
-  struct uvos_ibus_dev * ibus_dev = UVOS_IBUS_Alloc();
+  struct uvos_ibus_dev *ibus_dev = UVOS_IBUS_Alloc();
 
   if ( !ibus_dev ) {
     return -1;
   }
 
   *ibus_id = ( uint32_t )ibus_dev;
+
+  ibus_dev_saved_debug_temp_ptr = ibus_dev;
 
   UVOS_IBUS_SetAllChannels( ibus_dev, UVOS_RCVR_INVALID );
   ibus_dev->bank_0_write_enabled = true;
@@ -125,10 +130,11 @@ int32_t UVOS_IBUS_Init( uint32_t * ibus_id, const struct uvos_com_driver * drive
 static int32_t UVOS_IBUS_Read( uint32_t context, uint8_t channel )
 {
   if ( channel > UVOS_IBUS_NUM_INPUTS ) {
+    UVOS_Assert( 0 );
     return UVOS_RCVR_INVALID;
   }
 
-  struct uvos_ibus_dev * ibus_dev = ( struct uvos_ibus_dev * )context;
+  struct uvos_ibus_dev *ibus_dev = ( struct uvos_ibus_dev * )context;
   if ( !UVOS_IBUS_Validate( ibus_dev ) ) {
     return UVOS_RCVR_NODRIVER;
   }
@@ -140,7 +146,7 @@ static int32_t UVOS_IBUS_Read( uint32_t context, uint8_t channel )
   }
 }
 
-static void UVOS_IBUS_SetAllChannels( struct uvos_ibus_dev * ibus_dev, uint16_t value )
+static void UVOS_IBUS_SetAllChannels( struct uvos_ibus_dev *ibus_dev, uint16_t value )
 {
   for ( int i = 0; i < UVOS_IBUS_NUM_INPUTS; i++ ) {
     ibus_dev->channel_data_0[ i ] = value;
@@ -148,10 +154,10 @@ static void UVOS_IBUS_SetAllChannels( struct uvos_ibus_dev * ibus_dev, uint16_t 
   }
 }
 
-static uint16_t UVOS_IBUS_Receive( uint32_t context, uint8_t * buf, uint16_t buf_len,
-                                   uint16_t * headroom, bool * task_woken )
+static uint16_t UVOS_IBUS_Receive( uint32_t context, uint8_t *buf, uint16_t buf_len,
+                                   uint16_t *headroom, bool *task_woken )
 {
-  struct uvos_ibus_dev * ibus_dev = ( struct uvos_ibus_dev * )context;
+  struct uvos_ibus_dev *ibus_dev = ( struct uvos_ibus_dev * )context;
 
   if ( !UVOS_IBUS_Validate( ibus_dev ) ) {
     goto out_fail;
@@ -182,13 +188,13 @@ out_fail:
   return 0;
 }
 
-static void UVOS_IBUS_ResetBuffer( struct uvos_ibus_dev * ibus_dev )
+static void UVOS_IBUS_ResetBuffer( struct uvos_ibus_dev *ibus_dev )
 {
   ibus_dev->checksum = 0xffff;
   ibus_dev->buf_pos  = 0;
 }
 
-static void UVOS_IBUS_UnpackFrame( struct uvos_ibus_dev * ibus_dev )
+static void UVOS_IBUS_UnpackFrame( struct uvos_ibus_dev *ibus_dev )
 {
   uint16_t rxsum = ibus_dev->rx_buf[ UVOS_IBUS_BUFLEN - 1 ] << 8 |
                    ibus_dev->rx_buf[ UVOS_IBUS_BUFLEN - 2 ];
@@ -197,7 +203,7 @@ static void UVOS_IBUS_UnpackFrame( struct uvos_ibus_dev * ibus_dev )
     goto out_fail;
   }
 
-  uint16_t * chan = ( uint16_t * )&ibus_dev->rx_buf[ 2 ];
+  uint16_t *chan = ( uint16_t * )&ibus_dev->rx_buf[ 2 ];
   for ( int i = 0; i < UVOS_IBUS_NUM_INPUTS; i++ ) {
     if ( ibus_dev->bank_0_write_enabled ) {
       ibus_dev->channel_data_0[ i ] = *chan++;
@@ -215,7 +221,7 @@ out_fail:
 
 static void UVOS_IBUS_Supervisor( uint32_t context )
 {
-  struct uvos_ibus_dev * ibus_dev = ( struct uvos_ibus_dev * )context;
+  struct uvos_ibus_dev *ibus_dev = ( struct uvos_ibus_dev * )context;
 
   UVOS_Assert( UVOS_IBUS_Validate( ibus_dev ) );
 

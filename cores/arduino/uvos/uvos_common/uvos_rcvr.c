@@ -11,18 +11,18 @@ enum uvos_rcvr_dev_magic {
 struct uvos_rcvr_dev {
   enum uvos_rcvr_dev_magic magic;
   uint32_t lower_id;
-  const struct uvos_rcvr_driver * driver;
+  const struct uvos_rcvr_driver *driver;
 };
 
-static bool UVOS_RCVR_validate( struct uvos_rcvr_dev * rcvr_dev )
+static bool UVOS_RCVR_validate( struct uvos_rcvr_dev *rcvr_dev )
 {
   return rcvr_dev->magic == UVOS_RCVR_DEV_MAGIC;
 }
 
 #if defined(UVOS_INCLUDE_FREERTOS)
-static struct uvos_rcvr_dev * UVOS_RCVR_alloc( void )
+static struct uvos_rcvr_dev *UVOS_RCVR_alloc( void )
 {
-  struct uvos_rcvr_dev * rcvr_dev;
+  struct uvos_rcvr_dev *rcvr_dev;
 
   rcvr_dev = ( struct uvos_rcvr_dev * )UVOS_malloc( sizeof( *rcvr_dev ) );
   if ( !rcvr_dev ) {
@@ -35,9 +35,9 @@ static struct uvos_rcvr_dev * UVOS_RCVR_alloc( void )
 #else
 static struct uvos_rcvr_dev uvos_rcvr_devs[ UVOS_RCVR_MAX_DEVS ];
 static uint8_t uvos_rcvr_num_devs;
-static struct uvos_rcvr_dev * UVOS_RCVR_alloc( void )
+static struct uvos_rcvr_dev *UVOS_RCVR_alloc( void )
 {
-  struct uvos_rcvr_dev * rcvr_dev;
+  struct uvos_rcvr_dev *rcvr_dev;
 
   if ( uvos_rcvr_num_devs >= UVOS_RCVR_MAX_DEVS ) {
     return NULL;
@@ -57,12 +57,12 @@ static struct uvos_rcvr_dev * UVOS_RCVR_alloc( void )
  * \param[in] id
  * \return < 0 if initialisation failed
  */
-int32_t UVOS_RCVR_Init( uint32_t * rcvr_id, const struct uvos_rcvr_driver * driver, uint32_t lower_id )
+int32_t UVOS_RCVR_Init( uint32_t *rcvr_id, const struct uvos_rcvr_driver *driver, uint32_t lower_id )
 {
   UVOS_DEBUG_Assert( rcvr_id );
   UVOS_DEBUG_Assert( driver );
 
-  struct uvos_rcvr_dev * rcvr_dev;
+  struct uvos_rcvr_dev *rcvr_dev;
 
   rcvr_dev = ( struct uvos_rcvr_dev * )UVOS_RCVR_alloc();
   if ( !rcvr_dev ) {
@@ -101,7 +101,7 @@ int32_t UVOS_RCVR_Read( uint32_t rcvr_id, uint8_t channel )
     return UVOS_RCVR_NODRIVER;
   }
 
-  struct uvos_rcvr_dev * rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
+  struct uvos_rcvr_dev *rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
 
   if ( !UVOS_RCVR_validate( rcvr_dev ) ) {
     /* Undefined RCVR port for this board (see uvos_board.c) */
@@ -125,7 +125,7 @@ uint8_t UVOS_RCVR_GetQuality( uint32_t rcvr_id )
     return UVOS_RCVR_NODRIVER;
   }
 
-  struct uvos_rcvr_dev * rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
+  struct uvos_rcvr_dev *rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
 
   if ( !UVOS_RCVR_validate( rcvr_dev ) ) {
     /* Undefined RCVR port for this board (see uvos_board.c) */
@@ -162,7 +162,7 @@ xSemaphoreHandle UVOS_RCVR_GetSemaphore( uint32_t rcvr_id, uint8_t channel )
     return NULL;
   }
 
-  struct uvos_rcvr_dev * rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
+  struct uvos_rcvr_dev *rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
 
   if ( !UVOS_RCVR_validate( rcvr_dev ) ) {
     /* Undefined RCVR port for this board (see uvos_board.c) */
@@ -189,7 +189,7 @@ bool UVOS_RCVR_GetFrameAvailableFlag( uint32_t rcvr_id )
     return false;
   }
 
-  struct uvos_rcvr_dev * rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
+  struct uvos_rcvr_dev *rcvr_dev = ( struct uvos_rcvr_dev * )rcvr_id;
 
   if ( !UVOS_RCVR_validate( rcvr_dev ) ) {
     /* Undefined RCVR port for this board (see uvos_board.c) */
