@@ -93,15 +93,15 @@ static const struct uvos_exti_cfg uvos_exti_icm42688p_cfg __exti_config = {
 
 static const struct uvos_icm42688p_cfg uvos_icm42688p_cfg = {
   .exti_cfg   = &uvos_exti_icm42688p_cfg,
-  .Fifo_store = UVOS_ICM42688P_FIFO_TEMP_EN | UVOS_ICM42688P_FIFO_GYRO_EN | UVOS_ICM42688P_FIFO_ACCEL_EN,
+  // .Fifo_store = UVOS_ICM42688P_FIFO_TEMP_EN | UVOS_ICM42688P_FIFO_GYRO_EN | UVOS_ICM42688P_FIFO_ACCEL_EN,
   // Clock at 8 khz
   .Smpl_rate_odr  = UVOS_ICM42688P_ODR8k,
-  .interrupt_cfg  = UVOS_ICM42688P_INT_CLR_ANYRD,
-  .interrupt_en   = 0,
+  .interrupt_cfg  = ICM426XX_UI_DRDY_INT_CLEAR_ON_REG_READ,
+  .interrupt_en   = 0, // ICM426XX_UI_DRDY_INT1_EN_ENABLED
   // .Pwr_mgmt_clk   = UVOS_ICM42688P_PWRMGMT_PLL_Z_CLK,
   .accel_range    = UVOS_ICM42688P_ACCEL_8G,
   .gyro_range     = UVOS_ICM42688P_SCALE_2000_DEG,
-  .filter         = UVOS_ICM42688P_LOWPASS_256_HZ,
+  .gyro_filter    = UVOS_ICM42688P_LOWPASS_258_HZ,
   .orientation    = UVOS_ICM42688P_TOP_0DEG,
   .fast_prescaler = UVOS_SPI_PRESCALER_16,
   .std_prescaler  = UVOS_SPI_PRESCALER_128,
@@ -317,9 +317,10 @@ int32_t UVOS_Board_Init( void )
 
 #if defined(UVOS_INCLUDE_ICM42688P)
   /* Initialize IMU, initial settings per uvos_icm42688p_cfg defined above */
-  UVOS_ICM42688P_Init( uvos_spi_gyro_id, 0, &uvos_mpu42688p_cfg );
-  /* Configure settings */
-  // UVOS_ICM42688P_CONFIG_Configure();
+  ret = UVOS_ICM42688P_Init( uvos_spi_gyro_id, 0, &uvos_icm42688p_cfg );
+  if ( ret < 0 ) {
+    return -4;
+  }
   /* Register ICM42688P as a sensor via UVOS_SENSORS_Register() */
   UVOS_ICM42688P_Register();
 #endif

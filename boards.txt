@@ -98,6 +98,19 @@ Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.product_line=STM32F411xE
 Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.variant=STM32F4xx/F411RE_ICM42688P
 Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688P.build.cmsis_lib_gcc=arm_cortexM4lf_math
 
+# NUCLEO_F411RE board with ICM42688P using INT
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT=Nucleo F411RE w/ ICM42688P (INT)
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.node="NODE_F411RE_ICM42688P,NUCLEO"
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.upload.maximum_size=524288
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.upload.maximum_data_size=131072
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.mcu=cortex-m4
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.flags.fp=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.board=NUCLEO_F411RE_ICM42688P
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.series=STM32F4xx
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.product_line=STM32F411xE
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.variant=STM32F4xx/F411RE_ICM42688P_INT
+Nucleo_64.menu.pnum.NUCLEO_F411RE_ICM42688PINT.build.cmsis_lib_gcc=arm_cortexM4lf_math
+
 # NUCLEO_F405RG board with MPU6000
 Nucleo_64.menu.pnum.NUCLEO_F405RG=Nucleo F405RG W/ MPU6000 (no INT)
 Nucleo_64.menu.pnum.NUCLEO_F405RG.node="NODE_F405RG,NUCLEO"

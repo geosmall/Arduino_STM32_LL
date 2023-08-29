@@ -55,13 +55,13 @@ static const struct uvos_exti_cfg uvos_exti_user_btn_cfg __exti_config = {
 #endif // defined( UVOS_INCLUDE_EXTI )
 
 /**
- * Configuration for the MPU6000 chip
+ * Configuration for the ICM42688P chip
  */
-#if defined(UVOS_INCLUDE_MPU6000)
-#include "uvos_mpu6000.h"
-#include "uvos_mpu6000_config.h"
-static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
-  .vector = UVOS_MPU6000_IRQHandler,
+#if defined(UVOS_INCLUDE_ICM42688P)
+#include "uvos_icm42688p.h"
+#include "uvos_icm42688p_config.h"
+static const struct uvos_exti_cfg uvos_exti_icm42688p_cfg __exti_config = {
+  .vector = UVOS_ICM42688P_IRQHandler,
   .line = LL_EXTI_LINE_4,
   .pin = {
     .gpio = GPIOC,
@@ -78,39 +78,36 @@ static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
       .NVIC_IRQChannel = EXTI4_IRQn,
       .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
       .NVIC_IRQChannelSubPriority = 0,
-      .NVIC_IRQChannelCmd = DISABLE,
+      .NVIC_IRQChannelCmd = ENABLE,
     },
   },
   .exti = {
     .init = {
       .Line_0_31    = LL_EXTI_LINE_4, // matches above GPIO pin
-      .LineCommand  = DISABLE,
+      .LineCommand  = ENABLE,
       .Mode         = LL_EXTI_MODE_IT,
       .Trigger      = LL_EXTI_TRIGGER_RISING,
     },
   },
 };
 
-static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
-  .exti_cfg   = &uvos_exti_mpu6000_cfg,
-  .Fifo_store = UVOS_MPU6000_FIFO_TEMP_OUT | UVOS_MPU6000_FIFO_GYRO_X_OUT | UVOS_MPU6000_FIFO_GYRO_Y_OUT | UVOS_MPU6000_FIFO_GYRO_Z_OUT,
-  // Gyroscope Output Rate = 8kHz when DLPF is disabled
-  .Smpl_rate_div_no_dlp = 0,
-  // Gyroscope Output Rate = 1kHz when DLPF is enabled (see CONFIG Register 0x1A).
-  .Smpl_rate_div_dlp    = 0,
-  .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
-  .interrupt_en   = 0,
-  .User_ctl       = UVOS_MPU6000_USERCTL_DIS_I2C,
-  .Pwr_mgmt_clk   = UVOS_MPU6000_PWRMGMT_PLL_Z_CLK,
-  .accel_range    = UVOS_MPU6000_ACCEL_8G,
-  .gyro_range     = UVOS_MPU6000_SCALE_2000_DEG,
-  .filter         = UVOS_MPU6000_LOWPASS_256_HZ,
-  .orientation    = UVOS_MPU6000_TOP_0DEG,
+static const struct uvos_icm42688p_cfg uvos_icm42688p_cfg = {
+  .exti_cfg   = &uvos_exti_icm42688p_cfg,
+  // .Fifo_store = UVOS_ICM42688P_FIFO_TEMP_EN | UVOS_ICM42688P_FIFO_GYRO_EN | UVOS_ICM42688P_FIFO_ACCEL_EN,
+  // Clock at 8 khz
+  .Smpl_rate_odr  = UVOS_ICM42688P_ODR8k,
+  .interrupt_cfg  = ICM426XX_UI_DRDY_INT_CLEAR_ON_REG_READ,
+  .interrupt_en   = ICM426XX_UI_DRDY_INT1_EN_ENABLED,
+  // .Pwr_mgmt_clk   = UVOS_ICM42688P_PWRMGMT_PLL_Z_CLK,
+  .accel_range    = UVOS_ICM42688P_ACCEL_8G,
+  .gyro_range     = UVOS_ICM42688P_SCALE_2000_DEG,
+  .gyro_filter    = UVOS_ICM42688P_LOWPASS_258_HZ,
+  .orientation    = UVOS_ICM42688P_TOP_0DEG,
   .fast_prescaler = UVOS_SPI_PRESCALER_16,
   .std_prescaler  = UVOS_SPI_PRESCALER_128,
   .max_downsample = 20,
 };
-#endif /* UVOS_INCLUDE_MPU6000 */
+#endif /* UVOS_INCLUDE_ICM42688P */
 
 /* One slot per selectable receiver group.
  *  eg. PWM, PPM, GCS, SPEKTRUM1, SPEKTRUM2, SBUS
@@ -318,14 +315,14 @@ int32_t UVOS_Board_Init( void )
   UVOS_Board_configure_ibus( &uvos_usart_ibus_cfg );
 #endif // defined( UVOS_INCLUDE_IBUS )
 
-#if defined(UVOS_INCLUDE_MPU6000)
-  /* Initialize IMU, initial settings per uvos_mpu6000_cfg defined above */
-  ret = UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
+#if defined(UVOS_INCLUDE_ICM42688P)
+  /* Initialize IMU, initial settings per uvos_icm42688p_cfg defined above */
+  ret = UVOS_ICM42688P_Init( uvos_spi_gyro_id, 0, &uvos_icm42688p_cfg );
   if ( ret < 0 ) {
     return -4;
   }
-  /* Register MPU6000 as a sensor via UVOS_SENSORS_Register() */
-  UVOS_MPU6000_Register();
+  /* Register ICM42688P as a sensor via UVOS_SENSORS_Register() */
+  UVOS_ICM42688P_Register();
 #endif
 
   return 0;

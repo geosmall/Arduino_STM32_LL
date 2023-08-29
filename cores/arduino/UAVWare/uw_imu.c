@@ -38,7 +38,7 @@ bool UW_imu_init( void )
 int UW_imu_set_ranges( IMUGyroAccelSettingsGyroScaleOptions GyroScale, IMUGyroAccelSettingsAccelScaleOptions AccelScale )
 {
   /* Always use 256Hz HW filter for default */
-  IMUGyroAccelSettingsData settings = { GyroScale, AccelScale, IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_256_HZ, false };
+  IMUGyroAccelSettingsData settings = { GyroScale, AccelScale, IMUGYROACCELSETTINGS_FILTERSETTING_DEFAULT, false };
   IMUGyroAccelSettingsSet( &settings );
   return 0;
 }

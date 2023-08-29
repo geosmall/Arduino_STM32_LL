@@ -28,19 +28,19 @@
  */
 struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
 {
-	struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
+  struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
 
-	if ( queuep == NULL )
-		return NULL;
+  if ( queuep == NULL )
+    return NULL;
 
-	queuep->queue_handle = ( uintptr_t )NULL;
+  queuep->queue_handle = ( uintptr_t )NULL;
 
-	if ( ( queuep->queue_handle = ( uintptr_t )xQueueCreate( queue_length, item_size ) ) == ( uintptr_t )NULL ) {
-		UVOS_free( queuep );
-		return NULL;
-	}
+  if ( ( queuep->queue_handle = ( uintptr_t )xQueueCreate( queue_length, item_size ) ) == ( uintptr_t )NULL ) {
+    UVOS_free( queuep );
+    return NULL;
+  }
 
-	return queuep;
+  return queuep;
 }
 
 /**
@@ -52,8 +52,8 @@ struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
  */
 void UVOS_Queue_Delete( struct uvos_queue *queuep )
 {
-	vQueueDelete( ( xQueueHandle )queuep->queue_handle );
-	UVOS_free( queuep );
+  vQueueDelete( ( xQueueHandle )queuep->queue_handle );
+  UVOS_free( queuep );
 }
 
 /**
@@ -69,7 +69,7 @@ void UVOS_Queue_Delete( struct uvos_queue *queuep )
  */
 bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t timeout_ms )
 {
-	return xQueueSendToBack( ( xQueueHandle )queuep->queue_handle, itemp, MS2TICKS( timeout_ms ) ) == pdTRUE;
+  return xQueueSendToBack( ( xQueueHandle )queuep->queue_handle, itemp, MS2TICKS( timeout_ms ) ) == pdTRUE;
 }
 
 /**
@@ -85,10 +85,10 @@ bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t tim
  */
 bool UVOS_Queue_Send_FromISR( struct uvos_queue *queuep, const void *itemp, bool *wokenp )
 {
-	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-	portBASE_TYPE result = xQueueSendToBackFromISR( ( xQueueHandle )queuep->queue_handle, itemp, &xHigherPriorityTaskWoken );
-	*wokenp = *wokenp || xHigherPriorityTaskWoken == pdTRUE;
-	return result == pdTRUE;
+  portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+  portBASE_TYPE result = xQueueSendToBackFromISR( ( xQueueHandle )queuep->queue_handle, itemp, &xHigherPriorityTaskWoken );
+  *wokenp = *wokenp || xHigherPriorityTaskWoken == pdTRUE;
+  return result == pdTRUE;
 }
 
 /**
@@ -104,7 +104,7 @@ bool UVOS_Queue_Send_FromISR( struct uvos_queue *queuep, const void *itemp, bool
  */
 bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeout_ms )
 {
-	return xQueueReceive( ( xQueueHandle )queuep->queue_handle, itemp, MS2TICKS( timeout_ms ) ) == pdTRUE;
+  return xQueueReceive( ( xQueueHandle )queuep->queue_handle, itemp, MS2TICKS( timeout_ms ) ) == pdTRUE;
 }
 
 #elif defined(UVOS_INCLUDE_CHIBIOS)
@@ -122,24 +122,24 @@ bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeou
  */
 struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
 {
-	struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
-	if ( queuep == NULL )
-		return NULL;
+  struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
+  if ( queuep == NULL )
+    return NULL;
 
-	/* Create the memory pool. */
-	queuep->mpb = UVOS_malloc_no_dma( item_size * ( queue_length + UVOS_QUEUE_MAX_WAITERS ) );
-	if ( queuep->mpb == NULL ) {
-		UVOS_free( queuep );
-		return NULL;
-	}
-	chPoolInit( &queuep->mp, item_size, NULL );
-	chPoolLoadArray( &queuep->mp, queuep->mpb, queue_length + UVOS_QUEUE_MAX_WAITERS );
+  /* Create the memory pool. */
+  queuep->mpb = UVOS_malloc_no_dma( item_size * ( queue_length + UVOS_QUEUE_MAX_WAITERS ) );
+  if ( queuep->mpb == NULL ) {
+    UVOS_free( queuep );
+    return NULL;
+  }
+  chPoolInit( &queuep->mp, item_size, NULL );
+  chPoolLoadArray( &queuep->mp, queuep->mpb, queue_length + UVOS_QUEUE_MAX_WAITERS );
 
-	/* Create the mailbox. */
-	msg_t *mb_buf = UVOS_malloc_no_dma( sizeof( msg_t ) * queue_length );
-	chMBInit( &queuep->mb, mb_buf, queue_length );
+  /* Create the mailbox. */
+  msg_t *mb_buf = UVOS_malloc_no_dma( sizeof( msg_t ) * queue_length );
+  chMBInit( &queuep->mb, mb_buf, queue_length );
 
-	return queuep;
+  return queuep;
 }
 
 /**
@@ -151,8 +151,8 @@ struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
  */
 void UVOS_Queue_Delete( struct uvos_queue *queuep )
 {
-	UVOS_free( queuep->mpb );
-	UVOS_free( queuep );
+  UVOS_free( queuep->mpb );
+  UVOS_free( queuep );
 }
 
 /**
@@ -168,28 +168,28 @@ void UVOS_Queue_Delete( struct uvos_queue *queuep )
  */
 bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t timeout_ms )
 {
-	void *buf = chPoolAlloc( &queuep->mp );
-	if ( buf == NULL )
-		return false;
+  void *buf = chPoolAlloc( &queuep->mp );
+  if ( buf == NULL )
+    return false;
 
-	memcpy( buf, itemp, queuep->mp.mp_object_size );
+  memcpy( buf, itemp, queuep->mp.mp_object_size );
 
-	systime_t timeout;
-	if ( timeout_ms == UVOS_QUEUE_TIMEOUT_MAX )
-		timeout = TIME_INFINITE;
-	else if ( timeout_ms == 0 )
-		timeout = TIME_IMMEDIATE;
-	else
-		timeout = MS2ST( timeout_ms );
+  systime_t timeout;
+  if ( timeout_ms == UVOS_QUEUE_TIMEOUT_MAX )
+    timeout = TIME_INFINITE;
+  else if ( timeout_ms == 0 )
+    timeout = TIME_IMMEDIATE;
+  else
+    timeout = MS2ST( timeout_ms );
 
-	msg_t result = chMBPost( &queuep->mb, ( msg_t )buf, timeout );
+  msg_t result = chMBPost( &queuep->mb, ( msg_t )buf, timeout );
 
-	if ( result != RDY_OK ) {
-		chPoolFree( &queuep->mp, buf );
-		return false;
-	}
+  if ( result != RDY_OK ) {
+    chPoolFree( &queuep->mp, buf );
+    return false;
+  }
 
-	return true;
+  return true;
 }
 
 /**
@@ -205,26 +205,26 @@ bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t tim
  */
 bool UVOS_Queue_Send_FromISR( struct uvos_queue *queuep, const void *itemp, bool *wokenp )
 {
-	chSysLockFromIsr();
-	void *buf = chPoolAllocI( &queuep->mp );
-	if ( buf == NULL ) {
-		chSysUnlockFromIsr();
-		return false;
-	}
+  chSysLockFromIsr();
+  void *buf = chPoolAllocI( &queuep->mp );
+  if ( buf == NULL ) {
+    chSysUnlockFromIsr();
+    return false;
+  }
 
-	memcpy( buf, itemp, queuep->mp.mp_object_size );
+  memcpy( buf, itemp, queuep->mp.mp_object_size );
 
-	msg_t result = chMBPostI( &queuep->mb, ( msg_t )buf );
+  msg_t result = chMBPostI( &queuep->mb, ( msg_t )buf );
 
-	if ( result != RDY_OK ) {
-		chPoolFreeI( &queuep->mp, buf );
-		chSysUnlockFromIsr();
-		return false;
-	}
+  if ( result != RDY_OK ) {
+    chPoolFreeI( &queuep->mp, buf );
+    chSysUnlockFromIsr();
+    return false;
+  }
 
-	chSysUnlockFromIsr();
+  chSysUnlockFromIsr();
 
-	return true;
+  return true;
 }
 
 /**
@@ -240,26 +240,26 @@ bool UVOS_Queue_Send_FromISR( struct uvos_queue *queuep, const void *itemp, bool
  */
 bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeout_ms )
 {
-	msg_t buf;
+  msg_t buf;
 
-	systime_t timeout;
-	if ( timeout_ms == UVOS_QUEUE_TIMEOUT_MAX )
-		timeout = TIME_INFINITE;
-	else if ( timeout_ms == 0 )
-		timeout = TIME_IMMEDIATE;
-	else
-		timeout = MS2ST( timeout_ms );
+  systime_t timeout;
+  if ( timeout_ms == UVOS_QUEUE_TIMEOUT_MAX )
+    timeout = TIME_INFINITE;
+  else if ( timeout_ms == 0 )
+    timeout = TIME_IMMEDIATE;
+  else
+    timeout = MS2ST( timeout_ms );
 
-	msg_t result = chMBFetch( &queuep->mb, &buf, timeout );
+  msg_t result = chMBFetch( &queuep->mb, &buf, timeout );
 
-	if ( result != RDY_OK )
-		return false;
+  if ( result != RDY_OK )
+    return false;
 
-	memcpy( itemp, ( void * )buf, queuep->mp.mp_object_size );
+  memcpy( itemp, ( void * )buf, queuep->mp.mp_object_size );
 
-	chPoolFree( &queuep->mp, ( void * )buf );
+  chPoolFree( &queuep->mp, ( void * )buf );
 
-	return true;
+  return true;
 }
 
 #else
@@ -273,24 +273,24 @@ bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeou
  */
 struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
 {
-	uintptr_t buf_ptr;
+  uintptr_t buf_ptr;
 
-	struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
-	if ( queuep == NULL )
-		return NULL;
+  struct uvos_queue *queuep = UVOS_malloc_no_dma( sizeof( struct uvos_queue ) );
+  if ( queuep == NULL )
+    return NULL;
 
-	queuep->queue_length = queue_length;
-	queuep->item_size = item_size;
+  queuep->queue_length = queue_length;
+  queuep->item_size = item_size;
 
-	// if ( ( queuep->queue_handle = ( uintptr_t )xQueueCreate( queue_length, item_size ) ) == ( uintptr_t )NULL ) {
-	if ( ( buf_ptr = ( uintptr_t )UVOS_malloc( queue_length * item_size ) ) == ( uintptr_t )NULL ) {
-		UVOS_free( queuep );
-		return NULL;
-	}
-	// void fifoBuf_init(t_fifo_buffer *buf, const void *buffer, const uint16_t buffer_size);
-	fifoBuf_init( &queuep->fifo, (const void *)buf_ptr, ( queue_length * item_size ) );
+  // if ( ( queuep->queue_handle = ( uintptr_t )xQueueCreate( queue_length, item_size ) ) == ( uintptr_t )NULL ) {
+  if ( ( buf_ptr = ( uintptr_t )UVOS_malloc( queue_length * item_size ) ) == ( uintptr_t )NULL ) {
+    UVOS_free( queuep );
+    return NULL;
+  }
+  // void fifoBuf_init(t_fifo_buffer *buf, const void *buffer, const uint16_t buffer_size);
+  fifoBuf_init( &queuep->fifo, ( const void * )buf_ptr, ( queue_length * item_size ) );
 
-	return queuep;
+  return queuep;
 }
 
 /**
@@ -306,15 +306,15 @@ struct uvos_queue *UVOS_Queue_Create( size_t queue_length, size_t item_size )
  */
 bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t timeout_ms )
 {
-	UNUSED( timeout_ms );
-	uint16_t ret;
+  UNUSED( timeout_ms );
+  uint16_t ret;
 
-	// uint16_t fifoBuf_putData(t_fifo_buffer *buf, const void *data, uint16_t len)
-	ret = fifoBuf_putData( &queuep->fifo, itemp, queuep->item_size );
-	if ( ret != ( queuep->item_size ) ) {
-		return false;
-	}
-	return true;
+  // uint16_t fifoBuf_putData(t_fifo_buffer *buf, const void *data, uint16_t len)
+  ret = fifoBuf_putData( &queuep->fifo, itemp, queuep->item_size );
+  if ( ret != ( queuep->item_size ) ) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -330,15 +330,15 @@ bool UVOS_Queue_Send( struct uvos_queue *queuep, const void *itemp, uint32_t tim
  */
 bool UVOS_Queue_Receive( struct uvos_queue *queuep, void *itemp, uint32_t timeout_ms )
 {
-	UNUSED( timeout_ms );
-	uint16_t ret;
+  UNUSED( timeout_ms );
+  uint16_t ret;
 
-	// uint16_t fifoBuf_getData(t_fifo_buffer *buf, void *data, uint16_t len)
-	ret = fifoBuf_getData(  &queuep->fifo, itemp, queuep->item_size );
-	if ( ret != ( queuep->item_size ) ) {
-		return false;
-	}
-	return true;
+  // uint16_t fifoBuf_getData(t_fifo_buffer *buf, void *data, uint16_t len)
+  ret = fifoBuf_getData( &queuep->fifo, itemp, queuep->item_size );
+  if ( ret != ( queuep->item_size ) ) {
+    return false;
+  }
+  return true;
 }
 
 #endif /* defined(UVOS_INCLUDE_CHIBIOS) */

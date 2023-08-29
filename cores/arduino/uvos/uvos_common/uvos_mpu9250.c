@@ -497,7 +497,7 @@ static float UVOS_MPU9250_GetScale()
 {
   switch ( dev->gyro_range ) {
   case UVOS_MPU9250_SCALE_250_DEG:
-    return 1.0f / 131.0f;
+    return 1.0f / 131.0f; // = 1.0f / (32768 / 250)
 
   case UVOS_MPU9250_SCALE_500_DEG:
     return 1.0f / 65.5f;

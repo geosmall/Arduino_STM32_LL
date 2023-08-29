@@ -161,88 +161,6 @@ int32_t UVOS_MPU6000_Init( uint32_t spi_id, uint32_t slave_num, const struct uvo
   return 0;
 }
 
-#if 0 // gls
-
-/**
- * @brief Initialize the MPU6000 3-axis gyro sensor
- * \return none
- * \param[in] UVOS_MPU6000_ConfigTypeDef struct to be used to configure sensor.
- *
- */
-static void UVOS_MPU6000_Config( struct uvos_mpu6000_cfg const *cfg )
-{
-  UVOS_MPU6000_Test();
-
-  // Reset chip
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_PWR_MGMT_REG, UVOS_MPU6000_PWRMGMT_IMU_RST ) != 0 ) {
-    ;
-  }
-  UVOS_DELAY_WaitmS( 50 );
-
-  // Reset chip and fifo
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_USER_CTRL_REG,
-                               UVOS_MPU6000_USERCTL_GYRO_RST |
-                               UVOS_MPU6000_USERCTL_SIG_COND |
-                               UVOS_MPU6000_USERCTL_FIFO_RST ) != 0 ) {
-    ;
-  }
-
-  // Wait for reset to finish
-  while ( UVOS_MPU6000_GetReg( UVOS_MPU6000_USER_CTRL_REG ) &
-          ( UVOS_MPU6000_USERCTL_GYRO_RST |
-            UVOS_MPU6000_USERCTL_SIG_COND |
-            UVOS_MPU6000_USERCTL_FIFO_RST ) ) {
-    ;
-  }
-  UVOS_DELAY_WaitmS( 10 );
-  // Power management configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_PWR_MGMT_REG, cfg->Pwr_mgmt_clk ) != 0 ) {
-    ;
-  }
-
-  // Interrupt configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_INT_CFG_REG, cfg->interrupt_cfg ) != 0 ) {
-    ;
-  }
-
-  // Interrupt configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_INT_EN_REG, cfg->interrupt_en ) != 0 ) {
-    ;
-  }
-
-  // FIFO storage
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_FIFO_EN_REG, cfg->Fifo_store ) != 0 ) {
-    ;
-  }
-  UVOS_MPU6000_ConfigureRanges( cfg->gyro_range, cfg->accel_range, cfg->filter );
-  // Interrupt configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_USER_CTRL_REG, cfg->User_ctl ) != 0 ) {
-    ;
-  }
-
-  // Interrupt configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_PWR_MGMT_REG, cfg->Pwr_mgmt_clk ) != 0 ) {
-    ;
-  }
-
-  // Interrupt configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_INT_CFG_REG, cfg->interrupt_cfg ) != 0 ) {
-    ;
-  }
-
-  // Interrupt configuration
-  while ( UVOS_MPU6000_SetReg( UVOS_MPU6000_INT_EN_REG, cfg->interrupt_en ) != 0 ) {
-    ;
-  }
-  if ( ( UVOS_MPU6000_GetReg( UVOS_MPU6000_INT_EN_REG ) ) != cfg->interrupt_en ) {
-    return;
-  }
-
-  mpu6000_configured = true;
-}
-
-#endif // gls
-
 /**
  * @brief Initialize the MPU6000 3-axis gyro sensor
  * \return 0 if successful, negative number on error
@@ -607,7 +525,7 @@ static float UVOS_MPU6000_GetScale()
 {
   switch ( dev->gyro_range ) {
   case UVOS_MPU6000_SCALE_250_DEG:
-    return 1.0f / 131.0f;
+    return 1.0f / 131.0f; // = 1.0f / (32768 / 250)
 
   case UVOS_MPU6000_SCALE_500_DEG:
     return 1.0f / 65.5f;

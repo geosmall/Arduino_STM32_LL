@@ -37,18 +37,21 @@ const UVOS_SENSORS_Driver UVOS_ICM42688P_Driver = {
 static uint8_t _bank = 0; ///< current user bank
 
 struct icm42688p_dev {
-  uint32_t spi_id;
-  uint32_t slave_num;
-  p_uvos_queue_t queue;
-  const struct uvos_icm42688p_cfg *cfg;
-  enum uvos_icm42688p_gyro_range gyro_range;
-  enum uvos_icm42688p_accel_range accel_range;
-  enum uvos_icm42688p_filter filter;
-  enum uvos_icm42688p_dev_magic   magic;
+  uint32_t                         spi_id;
+  uint32_t                         slave_num;
+  p_uvos_queue_t                   queue;
+  const struct uvos_icm42688p_cfg  *cfg;
+  enum uvos_icm42688p_odr          sample_rate_odr;
+  enum uvos_icm42688p_accel_range  accel_range;
+  enum uvos_icm42688p_gyro_range   gyro_range;
+  enum uvos_icm42688p_filter       gyro_filter;
+  enum uvos_icm42688p_dev_magic    magic;
 };
 
 #define UVOS_ICM42688P_SAMPLES_BYTES    14
-#define UVOS_ICM42688P_SENSOR_FIRST_REG UB0_REG_TEMP_DATA1
+#define UVOS_ICM42688P_SENSOR_FIRST_REG ICM426XX_RA_TEMP_DATA1
+#define UVOS_ICM42688P_GYRO_FIRST_REG ICM426XX_RA_GYRO_DATA_X1
+#define UVOS_ICM42688P_ACCEL_FIRST_REG ICM426XX_RA_ACCEL_DATA_X1
 
 typedef union {
   uint8_t buffer[1 + UVOS_ICM42688P_SAMPLES_BYTES];
@@ -84,7 +87,6 @@ static UVOS_SENSORS_3Axis_SensorsWithTemp *queue_data = 0;
 // ! Private functions
 static struct icm42688p_dev *UVOS_ICM42688P_alloc( const struct uvos_icm42688p_cfg *cfg );
 static int32_t UVOS_ICM42688P_Validate( struct icm42688p_dev *dev );
-// static void UVOS_ICM42688P_Config( struct uvos_icm42688p_cfg const *cfg );
 static int32_t UVOS_ICM42688P_Config( struct uvos_icm42688p_cfg const *cfg );
 static int32_t UVOS_ICM42688P_SetReg( uint8_t address, uint8_t buffer );
 static int32_t UVOS_ICM42688P_GetReg( uint8_t address );
@@ -99,10 +101,9 @@ static int32_t UVOS_ICM42688P_SetGyroRange( enum uvos_icm42688p_gyro_range range
 static int32_t UVOS_ICM42688P_SetBank( uint8_t bank );
 static void UVOS_ICM42688P_GyroAccOff( void );
 static void UVOS_ICM42688P_GyroAccOn( void );
-static int32_t UVOS_ICM42688P_SetFilters( bool gyroFilters, bool accFilters );
 static int32_t UVOS_ICM42688P_SetAccelODR( enum uvos_icm42688p_odr odr );
 static int32_t UVOS_ICM42688P_SetGyroODR( enum uvos_icm42688p_odr odr );
-static void UVOS_ICM42688P_Reset();
+static void UVOS_ICM42688P_Reset( void );
 
 void UVOS_ICM42688P_Register()
 {
@@ -189,236 +190,150 @@ static int32_t UVOS_ICM42688P_Config( struct uvos_icm42688p_cfg const *cfg )
   UVOS_ICM42688P_SetBank( 0 );
   UVOS_ICM42688P_GyroAccOff();
 
-  // reset the ICM42688
+  // reset the ICM42688 (wait 1ms for soft reset to be effective)
   UVOS_ICM42688P_Reset();
+  UVOS_DELAY_WaituS( 1000 );
 
   if ( UVOS_ICM42688P_Test() ) {
     return -1;
   }
 
-  // turn on accel and gyro in Low Noise (LN) Mode
-  if ( UVOS_ICM42688P_SetReg( UB0_REG_PWR_MGMT0, 0x0F ) < 0 ) {
-    return -2;
-  }
-
   IMUGyroAccelSettingsData settings;
   IMUGyroAccelSettingsGet( &settings );
   if ( settings.isSet ) {
-    UVOS_ICM42688P_ConfigureRanges(
-      UVOS_ICM42688P_CONFIG_MAP_GYROSCALE( settings.GyroScale ),
-      UVOS_ICM42688P_CONFIG_MAP_ACCELSCALE( settings.AccelScale ),
-      UVOS_ICM42688P_CONFIG_MAP_FILTERSETTING( settings.FilterSetting )
-    );
+    dev->gyro_range = UVOS_ICM42688P_CONFIG_MAP_GYROSCALE( settings.GyroScale );
+    dev->accel_range = UVOS_ICM42688P_CONFIG_MAP_ACCELSCALE( settings.AccelScale );
+    dev->gyro_filter = UVOS_ICM42688P_CONFIG_MAP_FILTERSETTING( settings.FilterSetting );
   } else {
-    UVOS_ICM42688P_ConfigureRanges(
-      cfg->gyro_range,
-      cfg->accel_range,
-      cfg->filter
-    );
+    dev->gyro_range = cfg->gyro_range;
+    dev->accel_range = cfg->accel_range;
+    dev->gyro_filter = cfg->gyro_filter;
   }
+  dev->sample_rate_odr = cfg->Smpl_rate_odr;
+
+  aafConfig_t aafConfig;
+  // Configure gyro Anti-Alias Filter (see section 5.3 "ANTI-ALIAS FILTER")
+  // const mpuSensor_e gyroModel = gyro->mpuDetectionResult.sensor;
+  aafConfig = aafLUT42688[ dev->gyro_filter ];
+  // setUserBank( dev, ICM426XX_BANK_SELECT1 );
+  UVOS_ICM42688P_SetBank( 1 );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_CONFIG_STATIC3, aafConfig.delt );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_CONFIG_STATIC4, aafConfig.deltSqr & 0xFF );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_CONFIG_STATIC5, ( aafConfig.deltSqr >> 8 ) | ( aafConfig.bitshift << 4 ) );
+
+  // Configure accel Anti-Alias Filter for 1kHz sample rate
+  // aafConfig = getGyroAafConfig( gyroModel, AAF_CONFIG_258HZ );
+  aafConfig = aafLUT42688[ UVOS_ICM42688P_LOWPASS_258_HZ ];
+  // setUserBank( dev, ICM426XX_BANK_SELECT2 );
+  UVOS_ICM42688P_SetBank( 2 );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_ACCEL_CONFIG_STATIC2, aafConfig.delt << 1 );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_ACCEL_CONFIG_STATIC3, aafConfig.deltSqr & 0xFF );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_ACCEL_CONFIG_STATIC4, ( aafConfig.deltSqr >> 8 ) | ( aafConfig.bitshift << 4 ) );
+
+  // Configure gyro and acc UI Filters
+  // setUserBank( dev, ICM426XX_BANK_SELECT0 );
+  UVOS_ICM42688P_SetBank( 0 );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_ACCEL_CONFIG0, ICM426XX_ACCEL_UI_FILT_BW_LOW_LATENCY | ICM426XX_GYRO_UI_FILT_BW_LOW_LATENCY );
+
+  // Configure interrupt pin
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_INT_CONFIG, ICM426XX_INT1_MODE_PULSED | ICM426XX_INT1_DRIVE_CIRCUIT_PP | ICM426XX_INT1_POLARITY_ACTIVE_HIGH );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_INT_CONFIG0, cfg->interrupt_cfg ); // How interrupt is cleared
+
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_INT_SOURCE0, cfg->interrupt_en ); // Enable INT1
+
+  uint8_t intConfig1Value = UVOS_ICM42688P_GetReg( ICM426XX_RA_INT_CONFIG1 );
+  // Datasheet says: "User should change setting to 0 from default setting of 1, for proper INT1 and INT2 pin operation"
+  intConfig1Value &= ~( 1 << ICM426XX_INT_ASYNC_RESET_BIT );
+  intConfig1Value |= ( ICM426XX_INT_TPULSE_DURATION_8 | ICM426XX_INT_TDEASSERT_DISABLED );
+
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_INT_CONFIG1, intConfig1Value );
 
   // Turn on gyro and acc on again so ODR and FSR can be configured
   UVOS_ICM42688P_GyroAccOn();
 
-  // Set output data rates to 8KHz
-  if ( UVOS_ICM42688P_SetAccelODR( UVOS_ICM42688P_ODR8k ) < 0 ) {
-    return -3;
-  }
-  if ( UVOS_ICM42688P_SetGyroODR( UVOS_ICM42688P_ODR8k ) < 0 ) {
-    return -3;
-  }
+  // Set desired output data rates, full scale ranges
+  UVOS_ICM42688P_SetBank( 0 );
+
+  UVOS_ICM42688P_SetAccelRange( dev->accel_range );
+  UVOS_ICM42688P_SetAccelODR( dev->sample_rate_odr );
+
+  UVOS_ICM42688P_SetGyroRange( dev->gyro_range );
+  UVOS_ICM42688P_SetGyroODR( dev->sample_rate_odr );
 
   icm42688p_configured = true;
   return 0;
 }
 
-/**
- * @brief Configures Gyro, accel and Filter ranges/setings
- * @return 0 if successful, -1 if device has not been initialized
- */
-int32_t UVOS_ICM42688P_ConfigureRanges(
-  enum uvos_icm42688p_gyro_range gyroRange,
-  enum uvos_icm42688p_accel_range accelRange,
-  enum uvos_icm42688p_filter filterSetting )
+static int32_t UVOS_ICM42688P_SetAccelRangeAndODR( enum uvos_icm42688p_accel_range range, enum uvos_icm42688p_odr odr )
 {
-  int32_t ret;
-
-  if ( dev == NULL ) {
-    return -1;
-  }
-
-  // Make sure filters are active
-  ret = UVOS_ICM42688P_SetFilters( true, true );
-  if ( ret < 0 ) {
-    return -2;
-  }
-
-  // Sample rate divider, chosen upon digital filtering settings
-  // while ( UVOS_ICM42688P_SetReg( UVOS_ICM42688P_SMPLRT_DIV_REG,
-  //                                filterSetting == UVOS_ICM42688P_LOWPASS_256_HZ ?
-  //                                dev->cfg->Smpl_rate_div_no_dlp : dev->cfg->Smpl_rate_div_dlp ) != 0 ) {
-  //   ;
-  // }
-  // dev->filter = filterSetting;
-
-  // Gyro range
-  ret = UVOS_ICM42688P_SetGyroRange( gyroRange );
-  if ( ret < 0 ) {
-    return -2;
-  }
-  dev->gyro_range = gyroRange;
-
-  // Set the accel range
-  ret = UVOS_ICM42688P_SetAccelRange( accelRange );
-  if ( ret < 0 ) {
-    return -3;
-  }
-  dev->accel_range = accelRange;
-
-  return 0;
+  UVOS_ICM42688P_SetBank( 0 );
+  uint8_t reg = ( ( range << 5 ) & 0xE0 ) | ( odr & 0x0F );
+  return UVOS_ICM42688P_SetReg( ICM426XX_RA_ACCEL_CONFIG0, reg );
 }
 
-/* sets the accelerometer full scale range to values other than default */
+static int32_t UVOS_ICM42688P_SetGyroRangeAndODR( enum uvos_icm42688p_accel_range range, enum uvos_icm42688p_odr odr )
+{
+  UVOS_ICM42688P_SetBank( 0 );
+  uint8_t reg = ( ( range << 5 ) & 0xE0 ) | ( odr & 0x0F );
+  return UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_CONFIG0, reg );
+}
+
 static int32_t UVOS_ICM42688P_SetAccelRange( enum uvos_icm42688p_accel_range range )
 {
-  // use low speed SPI for register setting
-  // _useSPIHS = false;
-
-  // setBank(0);
   UVOS_ICM42688P_SetBank( 0 );
 
   // read current register value
-  // uint8_t reg;
-  // if (readRegisters(UB0_REG_ACCEL_CONFIG0, 1, &reg) < 0) return -1;
-  int32_t ret = UVOS_ICM42688P_GetReg( UB0_REG_ACCEL_CONFIG0 );
-  if ( ret < 0 ) {
-    return -1;
-  }
+  int32_t ret = UVOS_ICM42688P_GetReg( ICM426XX_RA_ACCEL_CONFIG0 );
+  if ( ret < 0 ) return -1;
+
   uint8_t reg = ( uint8_t )ret;
-
-  // only change FS_SEL in reg
-  reg = ( range << 5 ) | ( reg & 0x1F );
-
-  // if (writeRegister(UB0_REG_ACCEL_CONFIG0, reg) < 0) return -2;
-  if ( UVOS_ICM42688P_SetReg( UB0_REG_ACCEL_CONFIG0, reg ) < 0 ) return -2;
-
-  // _accelScale = static_cast<float>(1 << (4 - range)) / 32768.0f;
-  // _accelFS = range;
+  reg = ( range << 5 ) | ( reg & 0x1F ); // only change FS_SEL in reg
+  if ( UVOS_ICM42688P_SetReg( ICM426XX_RA_ACCEL_CONFIG0, reg ) < 0 ) return -2;
 
   return 0;
 }
 
-/* sets the gyro full scale range to values other than default */
 static int32_t UVOS_ICM42688P_SetGyroRange( enum uvos_icm42688p_gyro_range range )
 {
-  // use low speed SPI for register setting
-  // _useSPIHS = false;
-
-  // setBank(0);
   UVOS_ICM42688P_SetBank( 0 );
 
   // read current register value
-  // uint8_t reg;
-  // if (readRegisters(UB0_REG_GYRO_CONFIG0, 1, &reg) < 0) return -1;
-  int32_t ret = UVOS_ICM42688P_GetReg( UB0_REG_GYRO_CONFIG0 );
-  if ( ret < 0 ) {
-    return -1;
-  }
+  int32_t ret = UVOS_ICM42688P_GetReg( ICM426XX_RA_GYRO_CONFIG0 );
+  if ( ret < 0 ) return -1;
+
   uint8_t reg = ( uint8_t )ret;
-
-  // only change FS_SEL in reg
-  reg = ( range << 5 ) | ( reg & 0x1F );
-
-  // if (writeRegister(UB0_REG_GYRO_CONFIG0, reg) < 0) return -2;
-  if ( UVOS_ICM42688P_SetReg( UB0_REG_GYRO_CONFIG0, reg ) < 0 ) return -2;
-
-  // _gyroScale = (2000.0f / static_cast<float>(1 << range)) / 32768.0f;
-  // _gyroFS = range;
+  reg = ( range << 5 ) | ( reg & 0x1F ); // only change FS_SEL in reg
+  if ( UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_CONFIG0, reg ) < 0 ) return -2;
 
   return 0;
 }
 
 static int32_t UVOS_ICM42688P_SetAccelODR( enum uvos_icm42688p_odr odr )
 {
-  // use low speed SPI for register setting
-  // _useSPIHS = false;
-
-  // setBank(0);
   UVOS_ICM42688P_SetBank( 0 );
 
   // read current register value
-  // uint8_t reg;
-  // if ( readRegisters( UB0_REG_ACCEL_CONFIG0, 1, &reg ) < 0 ) return -1;
-  int32_t ret = UVOS_ICM42688P_GetReg( UB0_REG_ACCEL_CONFIG0 );
-  if ( ret < 0 ) {
-    return -1;
-  }
+  int32_t ret = UVOS_ICM42688P_GetReg( ICM426XX_RA_ACCEL_CONFIG0 );
+  if ( ret < 0 ) return -1;
+
   uint8_t reg = ( uint8_t )ret;
-
-  // only change ODR in reg
-  reg = odr | ( reg & 0xF0 );
-
-  // if ( writeRegister( UB0_REG_ACCEL_CONFIG0, reg ) < 0 ) return -2;
-  if ( UVOS_ICM42688P_SetReg( UB0_REG_ACCEL_CONFIG0, reg ) < 0 ) return -2;
+  reg = odr | ( reg & 0xF0 ); // only change ODR in reg
+  if ( UVOS_ICM42688P_SetReg( ICM426XX_RA_ACCEL_CONFIG0, reg ) < 0 ) return -2;
 
   return 0;
 }
 
 static int32_t UVOS_ICM42688P_SetGyroODR( enum uvos_icm42688p_odr odr )
 {
-  // use low speed SPI for register setting
-  // _useSPIHS = false;
-
-  // setBank(0);
   UVOS_ICM42688P_SetBank( 0 );
 
   // read current register value
-  // uint8_t reg;
-  // if ( readRegisters( UB0_REG_GYRO_CONFIG0, 1, &reg ) < 0 ) return -1;
-  int32_t ret = UVOS_ICM42688P_GetReg( UB0_REG_GYRO_CONFIG0 );
-  if ( ret < 0 ) {
-    return -1;
-  }
+  int32_t ret = UVOS_ICM42688P_GetReg( ICM426XX_RA_GYRO_CONFIG0 );
+  if ( ret < 0 ) return -1;
+
   uint8_t reg = ( uint8_t )ret;
-
-  // only change ODR in reg
-  reg = odr | ( reg & 0xF0 );
-
-  // if ( writeRegister( UB0_REG_GYRO_CONFIG0, reg ) < 0 ) return -2;
-  if ( UVOS_ICM42688P_SetReg( UB0_REG_GYRO_CONFIG0, reg ) < 0 ) return -2;
-
-  return 0;
-}
-
-static int32_t UVOS_ICM42688P_SetFilters( bool gyroFilters, bool accFilters )
-{
-  // if (setBank(1) < 0) return -1;
-  UVOS_ICM42688P_SetBank( 1 );
-
-  if ( gyroFilters == true ) {
-    if ( UVOS_ICM42688P_SetReg( UB1_REG_GYRO_CONFIG_STATIC2, GYRO_NF_ENABLE | GYRO_AAF_ENABLE ) < 0 ) {
-      return -1;
-    }
-  } else {
-    if ( UVOS_ICM42688P_SetReg( UB1_REG_GYRO_CONFIG_STATIC2, GYRO_NF_DISABLE | GYRO_AAF_DISABLE ) < 0 ) {
-      return -1;
-    }
-  }
-
-  // if ( setBank( 2 ) < 0 ) return -4;
-  UVOS_ICM42688P_SetBank( 2 );
-
-  if ( accFilters == true ) {
-    if ( UVOS_ICM42688P_SetReg( UB2_REG_ACCEL_CONFIG_STATIC2, ACCEL_AAF_ENABLE ) < 0 ) {
-      return -2;
-    }
-  } else {
-    if ( UVOS_ICM42688P_SetReg( UB2_REG_ACCEL_CONFIG_STATIC2, ACCEL_AAF_DISABLE ) < 0 ) {
-      return -2;
-    }
-  }
-  // if (setBank(0) < 0) return -7;
-  UVOS_ICM42688P_SetBank( 0 );
+  reg = odr | ( reg & 0xF0 ); // only change ODR in reg
+  if ( UVOS_ICM42688P_SetReg( ICM426XX_RA_GYRO_CONFIG0, reg ) < 0 ) return -2;
 
   return 0;
 }
@@ -552,7 +467,7 @@ static int32_t UVOS_ICM42688P_SetReg( uint8_t reg, uint8_t data )
 int32_t UVOS_ICM42688P_DummyReadGyros()
 {
   // THIS FUNCTION IS DEPRECATED AND DOES NOT PERFORM A ROTATION
-  uint8_t buf[7] = { UB0_REG_GYRO_DATA_X1 | 0x80, 0, 0, 0, 0, 0, 0 };
+  uint8_t buf[7] = { UVOS_ICM42688P_GYRO_FIRST_REG | 0x80, 0, 0, 0, 0, 0, 0 };
   uint8_t rec[7];
 
   if ( UVOS_ICM42688P_ClaimBus( true ) != 0 ) {
@@ -574,7 +489,7 @@ int32_t UVOS_ICM42688P_DummyReadGyros()
  */
 int32_t UVOS_ICM42688P_ReadID()
 {
-  int32_t icm42688p_id = UVOS_ICM42688P_GetReg( UB0_REG_WHO_AM_I );
+  int32_t icm42688p_id = UVOS_ICM42688P_GetReg( ICM426XX_WHO_AM_I );
 
   if ( icm42688p_id < 0 ) {
     return -1;
@@ -600,7 +515,7 @@ static float UVOS_ICM42688P_GetScale()
 {
   switch ( dev->gyro_range ) {
   case UVOS_ICM42688P_SCALE_250_DEG:
-    return 1.0f / 131.0f;
+    return 1.0f / 131.0f; // = 1.0f / (32768 / 250)
 
   case UVOS_ICM42688P_SCALE_500_DEG:
     return 1.0f / 65.5f;
@@ -653,27 +568,21 @@ static int32_t UVOS_ICM42688P_Test( void )
   return 0;
 }
 
-static int32_t UVOS_ICM42688P_SetBank( uint8_t bank )
+static int32_t UVOS_ICM42688P_SetBank( const uint8_t bank )
 {
   // if we are already on this bank, bail
   if ( _bank == bank ) return -1;
 
   _bank = bank;
 
-  return UVOS_ICM42688P_SetReg( REG_BANK_SEL, bank );
+  return UVOS_ICM42688P_SetReg( ICM426XX_RA_REG_BANK_SEL, bank & 7 );
 }
-
-#define ICM426XX_PWR_MGMT0_ACCEL_MODE_LN            (3 << 0)
-#define ICM426XX_PWR_MGMT0_GYRO_MODE_LN             (3 << 2)
-#define ICM426XX_PWR_MGMT0_GYRO_ACCEL_MODE_OFF      ((0 << 0) | (0 << 2))
-#define ICM426XX_PWR_MGMT0_TEMP_DISABLE_OFF         (0 << 5)
-#define ICM426XX_PWR_MGMT0_TEMP_DISABLE_ON          (1 << 5)
 
 static void UVOS_ICM42688P_GyroAccOff( void )
 {
   UVOS_ICM42688P_SetBank( 0 );
 
-  UVOS_ICM42688P_SetReg( UB0_REG_PWR_MGMT0, ICM426XX_PWR_MGMT0_GYRO_ACCEL_MODE_OFF );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_PWR_MGMT0, ICM426XX_PWR_MGMT0_GYRO_ACCEL_MODE_OFF );
   /* Per DK-42688-P_SmartMotion_eMD, powering the gyroscope on immediately after powering it off
    * can cause device failure. The gyroscope proof mass can continue vibrating after it has been powered off,
    * and powering it back on immediately can result in unpredictable proof mass movement.
@@ -686,17 +595,17 @@ static void UVOS_ICM42688P_GyroAccOn( void )
 {
   UVOS_ICM42688P_SetBank( 0 );
 
-  UVOS_ICM42688P_SetReg( UB0_REG_PWR_MGMT0, ICM426XX_PWR_MGMT0_TEMP_DISABLE_OFF | ICM426XX_PWR_MGMT0_ACCEL_MODE_LN | ICM426XX_PWR_MGMT0_GYRO_MODE_LN );
+  UVOS_ICM42688P_SetReg( ICM426XX_RA_PWR_MGMT0, ICM426XX_PWR_MGMT0_TEMP_DISABLE_OFF | ICM426XX_PWR_MGMT0_ACCEL_MODE_LN | ICM426XX_PWR_MGMT0_GYRO_MODE_LN );
 
   // Icm42688p gyroscope start-up time before having correct data (accel is shorter)
   UVOS_DELAY_WaituS( ICM42688P_GYRO_STARTUP_TIME_US );
 }
 
-static void UVOS_ICM42688P_Reset()
+static void UVOS_ICM42688P_Reset( void )
 {
   UVOS_ICM42688P_SetBank( 0 );
 
-  UVOS_ICM42688P_SetReg( UB0_REG_DEVICE_CONFIG, 0x01 );
+  UVOS_ICM42688P_SetReg( ICM426XX_DEVICE_CONFIG, 0x01 );
 
   // Wait ICM42688P_GYRO_STARTUP_TIME_US for soft reset to be effective before any further read
   UVOS_DELAY_WaituS( ICM42688P_GYRO_STARTUP_TIME_US );

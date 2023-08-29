@@ -94,9 +94,9 @@ static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
 static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
   .exti_cfg   = &uvos_exti_mpu6000_cfg,
   .Fifo_store = UVOS_MPU6000_FIFO_TEMP_OUT | UVOS_MPU6000_FIFO_GYRO_X_OUT | UVOS_MPU6000_FIFO_GYRO_Y_OUT | UVOS_MPU6000_FIFO_GYRO_Z_OUT,
-  // Clock at 8 khz
+  // Gyroscope Output Rate = 8kHz when DLPF is disabled
   .Smpl_rate_div_no_dlp = 0,
-  // with dlp on output rate is 1000Hz
+  // Gyroscope Output Rate = 1kHz when DLPF is enabled (see CONFIG Register 0x1A).
   .Smpl_rate_div_dlp    = 0,
   .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
   .interrupt_en   = UVOS_MPU6000_INTEN_DATA_RDY,
@@ -320,9 +320,10 @@ int32_t UVOS_Board_Init( void )
 
 #if defined(UVOS_INCLUDE_MPU6000)
   /* Initialize IMU, initial settings per uvos_mpu6000_cfg defined above */
-  UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
-  /* Configure settings */
-  // UVOS_MPU6000_CONFIG_Configure();
+  ret = UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
+  if ( ret < 0 ) {
+    return -4;
+  }
   /* Register MPU6000 as a sensor via UVOS_SENSORS_Register() */
   UVOS_MPU6000_Register();
 #endif

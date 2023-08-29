@@ -18,7 +18,7 @@
 /* Field GyroScale information */
 
 // Enumeration options for field GyroScale
-typedef enum __attribute__ ( ( __packed__ ) )
+typedef enum __attribute__( ( __packed__ ) )
 {
   IMUGYROACCELSETTINGS_GYROSCALE_SCALE_250 = 0,
   IMUGYROACCELSETTINGS_GYROSCALE_SCALE_500 = 1,
@@ -29,7 +29,7 @@ typedef enum __attribute__ ( ( __packed__ ) )
 /* Field AccelScale information */
 
 // Enumeration options for field AccelScale
-typedef enum __attribute__ ( ( __packed__ ) )
+typedef enum __attribute__( ( __packed__ ) )
 {
   IMUGYROACCELSETTINGS_ACCELSCALE_SCALE_2G = 0,
   IMUGYROACCELSETTINGS_ACCELSCALE_SCALE_4G = 1,
@@ -40,18 +40,28 @@ typedef enum __attribute__ ( ( __packed__ ) )
 /* Field FilterSetting information */
 
 // Enumeration options for field FilterSetting
-typedef enum __attribute__ ( ( __packed__ ) )
+// typedef enum __attribute__( ( __packed__ ) )
+// {
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_256_HZ = 0, /** default **/
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_188_HZ = 1,
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_98_HZ = 2,
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_42_HZ = 3,
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_20_HZ = 4,
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_10_HZ = 5,
+//   IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_5_HZ = 6
+// } IMUGyroAccelSettingsFilterSettingOptions;
+
+// Enumeration options for field FilterSetting
+typedef enum __attribute__( ( __packed__ ) )
 {
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_256_HZ = 0, /** default **/
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_188_HZ = 1,
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_98_HZ = 2,
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_42_HZ = 3,
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_20_HZ = 4,
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_10_HZ = 5,
-  IMUGYROACCELSETTINGS_FILTERSETTING_LOWPASS_5_HZ = 6
+  IMUGYROACCELSETTINGS_FILTERSETTING_DEFAULT = 0, /** default, approx. 250-300Hz **/
+  IMUGYROACCELSETTINGS_FILTERSETTING_HIGH3 = 1,
+  IMUGYROACCELSETTINGS_FILTERSETTING_HIGH2 = 2,
+  IMUGYROACCELSETTINGS_FILTERSETTING_HIGH1 = 3,
+  IMUGYROACCELSETTINGS_FILTERSETTING_MED2 = 4,
+  IMUGYROACCELSETTINGS_FILTERSETTING_MED1 = 5,
+  IMUGYROACCELSETTINGS_FILTERSETTING_LOW = 6
 } IMUGyroAccelSettingsFilterSettingOptions;
-
-
 
 
 /*
