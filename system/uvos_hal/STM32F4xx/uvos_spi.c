@@ -973,7 +973,7 @@ void UVOS_SPI_IRQ_Handler( uint32_t spi_id )
   UVOS_Assert( valid )
 
   // FIXME XXX Only RX channel or better clear flags for both channels?
-  DMA_ClearFlags( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream, spi_dev->cfg->dma.irq.flags );
+  DMA_ClearITPendingBits( spi_dev->cfg->dma.rx.DMAx, spi_dev->cfg->dma.rx.stream, spi_dev->cfg->dma.irq.flags );
 
   // if ( spi_dev->cfg->init.Mode == LL_SPI_MODE_MASTER ) {
   if ( LL_SPI_GetMode( spi_dev->cfg->regs ) == LL_SPI_MODE_MASTER ) {

@@ -159,9 +159,9 @@ typedef struct {
                                 (UVOS_DMA_IFLG_TEIF)  | \
                                 (UVOS_DMA_IFLG_DMEIF) | \
                                 (UVOS_DMA_IFLG_FEIF))
-#define UVOS_DMA_IS_ANY_OF_IFLG_BITS(BITS) ((((BITS) & ~(UVOS_DMA_ALL_IFLG_BITS)) == 0x00) && ((BITS) != 0x00))
+#define UVOS_DMA_IS_IFLG_BITS(BITS) ((((BITS) & ~(UVOS_DMA_ALL_IFLG_BITS)) == 0x00) && ((BITS) != 0x00))
 
-#define UVOS_DMA_IS_SINGLE_IFLAG_BIT(IFLAG) (((IFLAG) == UVOS_DMA_IFLG_TCIF) || \
+#define UVOS_DMA_IS_SINGLE_IFLG_BIT(IFLAG) (((IFLAG) == UVOS_DMA_IFLG_TCIF) || \
                                              ((IFLAG) == UVOS_DMA_IFLG_HTIF) || \
                                              ((IFLAG) == UVOS_DMA_IFLG_TEIF) || \
                                              ((IFLAG) == UVOS_DMA_IFLG_DMEIF) || \
@@ -184,7 +184,7 @@ typedef struct {
                                 (UVOS_DMA_ITEN_TE)  | \
                                 (UVOS_DMA_ITEN_DME) | \
                                 (UVOS_DMA_ITEN_FE))
-#define UVOS_DMA_IS_ANY_OF_ITEN_BITS(IT) ((((IT) & ~(UVOS_DMA_ALL_ITEN_BITS)) == 0x00) && ((IT) != 0x00))
+#define UVOS_DMA_IS_ITEN_BITS(IT) ((((IT) & ~(UVOS_DMA_ALL_ITEN_BITS)) == 0x00) && ((IT) != 0x00))
 
 #define UVOS_DMA_TRANSFER_ITEN_BITS ((UVOS_DMA_ITEN_TC) | \
                                      (UVOS_DMA_ITEN_HT) | \
@@ -213,10 +213,10 @@ void NVIC_Init( NVIC_InitTypeDef *NVIC_InitStruct );
 void NVIC_SetVectorTable( uint32_t NVIC_VectTab, uint32_t Offset );
 void NVIC_SystemLPConfig( uint8_t LowPowerMode, FunctionalState NewState );
 void SysTick_CLKSourceConfig( uint32_t SysTick_CLKSource );
-void DMA_ClearFlags( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints );
-void DMA_ClearAllFlags( DMA_TypeDef *DMAx, uint32_t Stream );
 void DMA_ITConfig( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints, FunctionalState NewState );
 ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int );
+void DMA_ClearITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints );
+void DMA_ClearAllITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream );
 
 #ifdef __cplusplus
 }

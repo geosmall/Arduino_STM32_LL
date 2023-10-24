@@ -226,79 +226,6 @@ void SysTick_CLKSourceConfig( uint32_t SysTick_CLKSource )
 
 static const uint8_t UVOS_DMA_flag_bit_offset[8U] = {0U, 6U, 16U, 22U, 0U, 6U, 16U, 22U};
 
-
-/**
-  * @brief  Clears the specified DMA Stream's pending flags.
-  * @param  DMAx DMA Instance
-  * @param  Stream This parameter can be one of the following values:
-  *         @arg @ref LL_DMA_STREAM_0
-  *         @arg @ref LL_DMA_STREAM_1
-  *         @arg @ref LL_DMA_STREAM_2
-  *         @arg @ref LL_DMA_STREAM_3
-  *         @arg @ref LL_DMA_STREAM_4
-  *         @arg @ref LL_DMA_STREAM_5
-  *         @arg @ref LL_DMA_STREAM_6
-  *         @arg @ref LL_DMA_STREAM_7
-  * @param DMA_ints: specifies the DMA interrupt sources to be cleared.
-  *          This parameter can be any combination of the following values:
-  *            @arg UVOS_DMA_IT_TC:  Stream transfer complete interrupt
-  *            @arg UVOS_DMA_IT_HT:  Stream half transfer complete interrupt
-  *            @arg UVOS_DMA_IT_TE:  Stream transfer error interrupt
-  *            @arg UVOS_DMA_IT_DME: Stream direct mode error interrupt
-  *            @arg UVOS_DMA_IT_FE:  Stream FIFO error interrupt
-  *          Note that UVOS_DMA_IT_XX values are same as UVOS_DMA_IFLG_XXIF
-  * @retval None
-  */
-void DMA_ClearFlags( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints )
-{
-  /* Check the parameters */
-  UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
-  UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
-  UVOS_Assert( UVOS_DMA_IS_ANY_OF_IFLG_BITS ( DMA_ints ) );
-
-  /* Shift DMA_ints to the appropriate offset based on Stream number */
-  DMA_ints = ( DMA_ints << UVOS_DMA_flag_bit_offset[ Stream ] );
-
-  /* Check if LIFCR or HIFCR register is targeted */
-  if ( Stream > 3 ) {
-    DMAx->HIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
-  } else {
-    DMAx->LIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
-  }
-}
-
-/**
-  * @brief  Clears all DMA Stream's pending flags.
-  * @param  DMAx DMA Instance
-  * @param  Stream This parameter can be one of the following values:
-  *         @arg @ref LL_DMA_STREAM_0
-  *         @arg @ref LL_DMA_STREAM_1
-  *         @arg @ref LL_DMA_STREAM_2
-  *         @arg @ref LL_DMA_STREAM_3
-  *         @arg @ref LL_DMA_STREAM_4
-  *         @arg @ref LL_DMA_STREAM_5
-  *         @arg @ref LL_DMA_STREAM_6
-  *         @arg @ref LL_DMA_STREAM_7
-  * @retval None
-  */
-void DMA_ClearAllFlags( DMA_TypeDef *DMAx, uint32_t Stream )
-{
-  /* Check the parameters */
-  UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
-  UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
-
-  /* Shift DMA_ints to the appropriate offset based on Stream number */
-  uint32_t DMA_ints = ( UVOS_DMA_ALL_ITEN_BITS << UVOS_DMA_flag_bit_offset[ Stream ] );
-
-  /* Check if LIFCR or HIFCR register is targeted */
-  if ( Stream > 3 ) {
-    DMAx->HIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
-  } else {
-    DMAx->LIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
-  }
-}
-
-
 /**
   * @brief  Enables or disables the specified DMAy Streamx interrupts.
   * @param  DMAx DMA Instance
@@ -327,7 +254,7 @@ void DMA_ITConfig( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints, Functi
   /* Check the parameters */
   UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
   UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
-  UVOS_Assert( UVOS_DMA_IS_ANY_OF_ITEN_BITS( DMA_ints ) );
+  UVOS_Assert( UVOS_DMA_IS_ITEN_BITS( DMA_ints ) );
   UVOS_Assert( IS_FUNCTIONAL_STATE( NewState ) );
 
   DMA_Stream_TypeDef *DMAy_Streamx = __LL_DMA_GET_STREAM_INSTANCE( DMAx, Stream );
@@ -389,7 +316,7 @@ ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int )
   /* Check the parameters */
   UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
   UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
-  UVOS_Assert( UVOS_DMA_IS_SINGLE_IFLAG_BIT( DMA_int ) );
+  UVOS_Assert( UVOS_DMA_IS_SINGLE_IFLG_BIT( DMA_int ) );
 
   /* Check if the interrupt enable bit is set in the CR or FCR register */
   if ( DMA_int != UVOS_DMA_ITEN_FE ) {
@@ -431,6 +358,78 @@ ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int )
   /* Return the DMA_IT status */
   return  bitstatus;
 }
+
+/**
+  * @brief  Clears the specified DMA Stream's interrupt pending bits.
+  * @param  DMAx DMA Instance
+  * @param  Stream This parameter can be one of the following values:
+  *         @arg @ref LL_DMA_STREAM_0
+  *         @arg @ref LL_DMA_STREAM_1
+  *         @arg @ref LL_DMA_STREAM_2
+  *         @arg @ref LL_DMA_STREAM_3
+  *         @arg @ref LL_DMA_STREAM_4
+  *         @arg @ref LL_DMA_STREAM_5
+  *         @arg @ref LL_DMA_STREAM_6
+  *         @arg @ref LL_DMA_STREAM_7
+  * @param DMA_ints: specifies the DMA interrupt sources to be cleared.
+  *          This parameter can be any combination of the following values:
+  *            @arg UVOS_DMA_IT_TC:  Stream transfer complete interrupt
+  *            @arg UVOS_DMA_IT_HT:  Stream half transfer complete interrupt
+  *            @arg UVOS_DMA_IT_TE:  Stream transfer error interrupt
+  *            @arg UVOS_DMA_IT_DME: Stream direct mode error interrupt
+  *            @arg UVOS_DMA_IT_FE:  Stream FIFO error interrupt
+  *          Note that UVOS_DMA_IT_XX values are same as UVOS_DMA_IFLG_XXIF
+  * @retval None
+  */
+void DMA_ClearITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints )
+{
+  /* Check the parameters */
+  UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
+  UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
+  UVOS_Assert( UVOS_DMA_IS_IFLG_BITS ( DMA_ints ) );
+
+  /* Shift DMA_ints to the appropriate offset based on Stream number */
+  DMA_ints = ( DMA_ints << UVOS_DMA_flag_bit_offset[ Stream ] );
+
+  /* Check if LIFCR or HIFCR register is targeted */
+  if ( Stream > 3 ) {
+    DMAx->HIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
+  } else {
+    DMAx->LIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
+  }
+}
+
+/**
+  * @brief  Clears all DMA Stream's interrupt pending bits.
+  * @param  DMAx DMA Instance
+  * @param  Stream This parameter can be one of the following values:
+  *         @arg @ref LL_DMA_STREAM_0
+  *         @arg @ref LL_DMA_STREAM_1
+  *         @arg @ref LL_DMA_STREAM_2
+  *         @arg @ref LL_DMA_STREAM_3
+  *         @arg @ref LL_DMA_STREAM_4
+  *         @arg @ref LL_DMA_STREAM_5
+  *         @arg @ref LL_DMA_STREAM_6
+  *         @arg @ref LL_DMA_STREAM_7
+  * @retval None
+  */
+void DMA_ClearAllITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream )
+{
+  /* Check the parameters */
+  UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
+  UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
+
+  /* Shift DMA_ints to the appropriate offset based on Stream number */
+  uint32_t DMA_ints = ( UVOS_DMA_ALL_ITEN_BITS << UVOS_DMA_flag_bit_offset[ Stream ] );
+
+  /* Check if LIFCR or HIFCR register is targeted */
+  if ( Stream > 3 ) {
+    DMAx->HIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
+  } else {
+    DMAx->LIFCR = ( uint32_t )( DMA_ints & RESERVED_MASK );
+  }
+}
+
 
 // End DMA helper functions -----------------------------------<<<
 
