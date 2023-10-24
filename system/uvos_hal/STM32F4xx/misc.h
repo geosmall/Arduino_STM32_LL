@@ -4,7 +4,7 @@
 #define __MISC_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -20,14 +20,13 @@
 
 /* Exported types ------------------------------------------------------------*/
 
-/** 
-  * @brief  NVIC Init Structure definition  
+/**
+  * @brief  NVIC Init Structure definition
   */
 
-typedef struct
-{
+typedef struct {
   uint8_t NVIC_IRQChannel;                    /*!< Specifies the IRQ channel to be enabled or disabled.
-                                                   This parameter can be an enumerator of @ref IRQn_Type 
+                                                   This parameter can be an enumerator of @ref IRQn_Type
                                                    enumeration (For the complete STM32 Devices IRQ Channels
                                                    list, please refer to stm32f4xx.h file) */
 
@@ -42,17 +41,17 @@ typedef struct
                                                    A lower priority value indicates a higher priority */
 
   FunctionalState NVIC_IRQChannelCmd;         /*!< Specifies whether the IRQ channel defined in NVIC_IRQChannel
-                                                   will be enabled or disabled. 
-                                                   This parameter can be set either to ENABLE or DISABLE */   
+                                                   will be enabled or disabled.
+                                                   This parameter can be set either to ENABLE or DISABLE */
 } NVIC_InitTypeDef;
- 
+
 /* Exported constants --------------------------------------------------------*/
 
 /** @defgroup MISC_Exported_Constants
   * @{
   */
 
-/** @defgroup MISC_Vector_Table_Base 
+/** @defgroup MISC_Vector_Table_Base
   * @{
   */
 
@@ -64,7 +63,7 @@ typedef struct
   * @}
   */
 
-/** @defgroup MISC_System_Low_Power 
+/** @defgroup MISC_System_Low_Power
   * @{
   */
 
@@ -78,7 +77,7 @@ typedef struct
   * @}
   */
 
-/** @defgroup MISC_Preemption_Priority_Group 
+/** @defgroup MISC_Preemption_Priority_Group
   * @{
   */
 
@@ -109,7 +108,7 @@ typedef struct
   * @}
   */
 
-/** @defgroup MISC_SysTick_clock_source 
+/** @defgroup MISC_SysTick_clock_source
   * @{
   */
 
@@ -126,14 +125,98 @@ typedef struct
   */
 
 /* Exported macro ------------------------------------------------------------*/
+
+/* Numerical values from DMA_LISR & DMA_HISR (also match DMA interrupt clear register bit definitions) */
+// enum UVOS_DMA_IT {
+//   UVOS_DMA_IT_INVALID = 0U,
+//   UVOS_DMA_IT_TC      = 0x00000020,
+//   UVOS_DMA_IT_HT      = 0x00000010,
+//   UVOS_DMA_IT_TE      = 0x00000008,
+//   UVOS_DMA_IT_DME     = 0x00000004,
+//   UVOS_DMA_IT_FE      = 0x00000001,
+// };
+
+
+/** @defgroup DMA interrupt flag clear register bit definitions (DMA_LIFCR & DMA_HIFCR)
+  * @brief    DMA flag definitions
+  * @{
+  */
+#define UVOS_DMA_IFLG_TCIF    ((uint32_t)0x00000020) // DMA_LISR_TCIF0, Pos = 5U
+#define UVOS_DMA_IFLG_HTIF    ((uint32_t)0x00000010) // DMA_LISR_HTIF0, Pos = 4U = 
+#define UVOS_DMA_IFLG_TEIF    ((uint32_t)0x00000008) // DMA_LISR_TEIF0, Pos = 3U
+#define UVOS_DMA_IFLG_DMEIF   ((uint32_t)0x00000004) // DMA_LISR_DMEIF0, Pos = 2U
+
+#define UVOS_DMA_IFLG_FEIF    ((uint32_t)0x00000001) // DMA_LISR_FEIF0, Pos 0U
+
+#define UVOS_DMA_IT_TC        UVOS_DMA_IFLG_TCIF
+#define UVOS_DMA_IT_HT        UVOS_DMA_IFLG_HTIF
+#define UVOS_DMA_IT_TE        UVOS_DMA_IFLG_TEIF
+#define UVOS_DMA_IT_DME       UVOS_DMA_IFLG_DMEIF
+#define UVOS_DMA_IT_FE        UVOS_DMA_IFLG_FEIF
+
+#define UVOS_DMA_ALL_IFLG_BITS ((UVOS_DMA_IFLG_TCIF)  | \
+                                (UVOS_DMA_IFLG_HTIF)  | \
+                                (UVOS_DMA_IFLG_TEIF)  | \
+                                (UVOS_DMA_IFLG_DMEIF) | \
+                                (UVOS_DMA_IFLG_FEIF))
+#define UVOS_DMA_IS_ANY_OF_IFLG_BITS(BITS) ((((BITS) & ~(UVOS_DMA_ALL_IFLG_BITS)) == 0x00) && ((BITS) != 0x00))
+
+#define UVOS_DMA_IS_SINGLE_IFLAG_BIT(IFLAG) (((IFLAG) == UVOS_DMA_IFLG_TCIF) || \
+                                             ((IFLAG) == UVOS_DMA_IFLG_HTIF) || \
+                                             ((IFLAG) == UVOS_DMA_IFLG_TEIF) || \
+                                             ((IFLAG) == UVOS_DMA_IFLG_DMEIF) || \
+                                             ((IFLAG) == UVOS_DMA_IFLG_FEIF))
+
+
+/** @defgroup DMA Stream interrupt_enable bit definitions (DMA_SxCR & DMA_SxFCR)
+  * @brief    DMA interrupts definition
+  * @{
+  */
+#define UVOS_DMA_ITEN_TC      ((uint32_t)DMA_SxCR_TCIE)  // 4U = 0x00000010
+#define UVOS_DMA_ITEN_HT      ((uint32_t)DMA_SxCR_HTIE)  // 3U = 0x00000008
+#define UVOS_DMA_ITEN_TE      ((uint32_t)DMA_SxCR_TEIE)  // 2U = 0x00000004
+#define UVOS_DMA_ITEN_DME     ((uint32_t)DMA_SxCR_DMEIE) // 1U = 0x00000002
+
+#define UVOS_DMA_ITEN_FE      ((uint32_t)DMA_SxFCR_FEIE) // 7U = 0x00000080
+
+#define UVOS_DMA_ALL_ITEN_BITS ((UVOS_DMA_ITEN_TC)  | \
+                                (UVOS_DMA_ITEN_HT)  | \
+                                (UVOS_DMA_ITEN_TE)  | \
+                                (UVOS_DMA_ITEN_DME) | \
+                                (UVOS_DMA_ITEN_FE))
+#define UVOS_DMA_IS_ANY_OF_ITEN_BITS(IT) ((((IT) & ~(UVOS_DMA_ALL_ITEN_BITS)) == 0x00) && ((IT) != 0x00))
+
+#define UVOS_DMA_TRANSFER_ITEN_BITS ((UVOS_DMA_ITEN_TC) | \
+                                     (UVOS_DMA_ITEN_HT) | \
+                                     (UVOS_DMA_ITEN_TE) | \
+                                     (UVOS_DMA_ITEN_DME))
+#define UVOS_DMA_IS_TRANSFER_ITEN_BITS(IT) ((((IT) & ~(UVOS_DMA_TRANSFER_ITEN_BITS)) == 0x00) && ((IT) != 0x00))
+
+
+#define UVOS_DMA_IS_INSTANCE(INSTANCE) (((INSTANCE) == DMA1) || \
+                                        ((INSTANCE) == DMA2))
+
+#define UVOS_DMA_IS_STREAM(STREAM) (((STREAM) == LL_DMA_STREAM_0) || \
+                                    ((STREAM) == LL_DMA_STREAM_1) || \
+                                    ((STREAM) == LL_DMA_STREAM_2) || \
+                                    ((STREAM) == LL_DMA_STREAM_3) || \
+                                    ((STREAM) == LL_DMA_STREAM_4) || \
+                                    ((STREAM) == LL_DMA_STREAM_5) || \
+                                    ((STREAM) == LL_DMA_STREAM_6) || \
+                                    ((STREAM) == LL_DMA_STREAM_7))
+
+
 /* Exported functions --------------------------------------------------------*/
 
-void NVIC_PriorityGroupConfig(uint32_t NVIC_PriorityGroup);
-void NVIC_Init(NVIC_InitTypeDef* NVIC_InitStruct);
-void NVIC_SetVectorTable(uint32_t NVIC_VectTab, uint32_t Offset);
-void NVIC_SystemLPConfig(uint8_t LowPowerMode, FunctionalState NewState);
-void SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource);
-void DMA_ClearFlags(DMA_TypeDef * DMAx, uint32_t DMA_flags);
+void NVIC_PriorityGroupConfig( uint32_t NVIC_PriorityGroup );
+void NVIC_Init( NVIC_InitTypeDef *NVIC_InitStruct );
+void NVIC_SetVectorTable( uint32_t NVIC_VectTab, uint32_t Offset );
+void NVIC_SystemLPConfig( uint8_t LowPowerMode, FunctionalState NewState );
+void SysTick_CLKSourceConfig( uint32_t SysTick_CLKSource );
+void DMA_ClearFlags( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints );
+void DMA_ClearAllFlags( DMA_TypeDef *DMAx, uint32_t Stream );
+void DMA_ITConfig( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints, FunctionalState NewState );
+ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int );
 
 #ifdef __cplusplus
 }
