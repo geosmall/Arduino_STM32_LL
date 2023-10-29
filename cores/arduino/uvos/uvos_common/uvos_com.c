@@ -22,11 +22,11 @@ struct uvos_com_dev {
   uint32_t lower_id;
   const struct uvos_com_driver * driver;
 
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
   struct uvos_semaphore *tx_sem;
   struct uvos_semaphore *rx_sem;
   struct uvos_mutex *sendbuffer_mtx;
-#endif
+// #endif
 
   bool has_rx;
   bool has_tx;
@@ -88,9 +88,9 @@ int32_t UVOS_COM_Init(uint32_t * com_id, const struct uvos_com_driver * driver, 
 
   if (has_rx) {
     fifoBuf_init(&com_dev->rx, rx_buffer, rx_buffer_len);
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
     com_dev->rx_sem = UVOS_Semaphore_Create();
-#endif  /* UVOS_INCLUDE_FREERTOS */
+// #endif  /* UVOS_INCLUDE_FREERTOS */
     (com_dev->driver->bind_rx_cb)(lower_id, UVOS_COM_RxInCallback, (uint32_t)com_dev);
     if (com_dev->driver->rx_start) {
       /* Start the receiver */
@@ -101,14 +101,14 @@ int32_t UVOS_COM_Init(uint32_t * com_id, const struct uvos_com_driver * driver, 
 
   if (has_tx) {
     fifoBuf_init(&com_dev->tx, tx_buffer, tx_buffer_len);
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
     com_dev->tx_sem = UVOS_Semaphore_Create();
-#endif  /* UVOS_INCLUDE_FREERTOS */
+// #endif  /* UVOS_INCLUDE_FREERTOS */
     (com_dev->driver->bind_tx_cb)(lower_id, UVOS_COM_TxOutCallback, (uint32_t)com_dev);
   }
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
   com_dev->sendbuffer_mtx = UVOS_Mutex_Create();
-#endif /* UVOS_INCLUDE_FREERTOS */
+// #endif /* UVOS_INCLUDE_FREERTOS */
 
   *com_id = (uint32_t)com_dev;
   return(0);
@@ -119,22 +119,22 @@ out_fail:
 
 static void UVOS_COM_UnblockRx(struct uvos_com_dev * com_dev, bool * need_yield)
 {
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
   if (UVOS_IRQ_InISR() == true)
     UVOS_Semaphore_Give_FromISR(com_dev->rx_sem, need_yield);
   else
     UVOS_Semaphore_Give(com_dev->rx_sem);
-#endif
+// #endif
 }
 
 static void UVOS_COM_UnblockTx(struct uvos_com_dev * com_dev, bool * need_yield)
 {
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
   if (UVOS_IRQ_InISR() == true)
     UVOS_Semaphore_Give_FromISR(com_dev->tx_sem, need_yield);
   else
     UVOS_Semaphore_Give(com_dev->tx_sem);
-#endif
+// #endif
 }
 
 static uint16_t UVOS_COM_RxInCallback(uint32_t context, uint8_t * buf, uint16_t buf_len, uint16_t * headroom, bool * need_yield)
@@ -230,11 +230,11 @@ int32_t UVOS_COM_SendBufferNonBlocking(uint32_t com_id, const uint8_t *buffer, u
 
   UVOS_Assert(com_dev->has_tx);
 
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
   if (UVOS_Mutex_Lock(com_dev->sendbuffer_mtx, 0) != true) {
     return -3;
   }
-#endif /* defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS) */
+// #endif /* defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS) */
   if (com_dev->driver->available && !com_dev->driver->available(com_dev->lower_id)) {
     /*
      * Underlying device is down/unconnected.
@@ -244,17 +244,17 @@ int32_t UVOS_COM_SendBufferNonBlocking(uint32_t com_id, const uint8_t *buffer, u
      * no longer accepting data.
      */
     fifoBuf_clearData(&com_dev->tx);
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
     UVOS_Mutex_Unlock(com_dev->sendbuffer_mtx);
-#endif /* UVOS_INCLUDE_FREERTOS */
+// #endif /* UVOS_INCLUDE_FREERTOS */
 
     return len;
   }
 
   if (len > fifoBuf_getFree(&com_dev->tx)) {
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
     UVOS_Mutex_Unlock(com_dev->sendbuffer_mtx);
-#endif /* UVOS_INCLUDE_FREERTOS */
+// #endif /* UVOS_INCLUDE_FREERTOS */
     /* Buffer cannot accept all requested bytes (retry) */
     return -2;
   }
@@ -269,9 +269,9 @@ int32_t UVOS_COM_SendBufferNonBlocking(uint32_t com_id, const uint8_t *buffer, u
     }
   }
 
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
   UVOS_Mutex_Unlock(com_dev->sendbuffer_mtx);
-#endif /* UVOS_INCLUDE_FREERTOS */
+// #endif /* UVOS_INCLUDE_FREERTOS */
   return (bytes_into_fifo);
 }
 
@@ -321,11 +321,11 @@ int32_t UVOS_COM_SendBuffer(uint32_t com_id, const uint8_t *buffer, uint16_t len
           (com_dev->driver->tx_start)(com_dev->lower_id,
                 fifoBuf_getUsed(&com_dev->tx));
         }
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
         if (UVOS_Semaphore_Take(com_dev->tx_sem, 5000) != true) {
           return -3;
         }
-#endif
+// #endif
         continue;
       default:
         /* Unhandled return code */
@@ -462,17 +462,17 @@ uint16_t UVOS_COM_ReceiveBuffer(uint32_t com_id, uint8_t * buf, uint16_t buf_len
                 fifoBuf_getFree(&com_dev->rx));
     }
     if (timeout_ms > 0) {
-#if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
+// #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
       if (UVOS_Semaphore_Take(com_dev->rx_sem, timeout_ms) == true) {
         /* Make sure we don't come back here again */
         timeout_ms = 0;
         goto check_again;
       }
-#else
-      UVOS_DELAY_WaitmS(1);
-      timeout_ms--;
-      goto check_again;
-#endif
+// #else
+//       UVOS_DELAY_WaitmS(1);
+//       timeout_ms--;
+//       goto check_again;
+// #endif
     }
   }
 
