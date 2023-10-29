@@ -322,4 +322,25 @@ static void UVOS_USART_generic_irq_handler( uint32_t usart_id )
 #endif /* UVOS_INCLUDE_FREERTOS */
 }
 
+void UVOS_USART_generic_dma_irq_handler( uint32_t usart_id )
+{
+  struct uvos_usart_dev *usart_dev = ( struct uvos_usart_dev * )usart_id;
+
+  bool valid = UVOS_USART_validate( usart_dev );
+
+  UVOS_Assert( valid );
+
+  /* Clear pending interrupt flags */
+  DMA_ClearITPendingBits( usart_dev->cfg->dma_tx.tx.DMAx, usart_dev->cfg->dma_tx.tx.stream, usart_dev->cfg->dma_tx.irq.flags );
+
+  // if(LL_DMA_IsActiveFlag_TC7(DMA1))
+  // {
+  //   LL_DMA_ClearFlag_TC7(DMA1);
+  //   DMA_ClearFlags( usart_dev->cfg->dma_tx.tx.DMAx, usart_dev->cfg->dma_tx.irq.flags );
+  //   /* Call function Reception complete Callback */
+  //   DMA1_ReceiveComplete_Callback();
+  // }
+
+}
+
 #endif /* UVOS_INCLUDE_USART */
