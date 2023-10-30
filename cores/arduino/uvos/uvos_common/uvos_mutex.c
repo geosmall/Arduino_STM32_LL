@@ -339,7 +339,7 @@ bool UVOS_Mutex_Unlock( struct uvos_mutex *mtx )
 
 struct uvos_recursive_mutex *UVOS_Recursive_Mutex_Create( void )
 {
-  struct uvos_mutex *mtx = UVOS_malloc_no_dma( sizeof( struct uvos_mutex ) );
+  struct uvos_recursive_mutex *mtx = UVOS_malloc_no_dma( sizeof( struct uvos_recursive_mutex ) );
 
   if ( mtx == NULL ) {
     return NULL;
