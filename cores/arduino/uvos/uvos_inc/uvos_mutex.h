@@ -33,6 +33,9 @@ struct uvos_mutex {
   bool mtx_is_locked;
 };
 
+struct uvos_recursive_mutex {
+  bool mtx_is_locked;
+};
 
 #endif /* defined(UVOS_INCLUDE_IRQ) */
 

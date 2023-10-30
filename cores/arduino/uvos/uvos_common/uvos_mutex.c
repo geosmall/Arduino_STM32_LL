@@ -337,5 +337,77 @@ bool UVOS_Mutex_Unlock( struct uvos_mutex *mtx )
 }
 
 
+struct uvos_recursive_mutex *UVOS_Recursive_Mutex_Create( void )
+{
+  struct uvos_mutex *mtx = UVOS_malloc_no_dma( sizeof( struct uvos_mutex ) );
+
+  if ( mtx == NULL ) {
+    return NULL;
+  }
+
+  /* Initial state of a mutex is "unlocked" */
+  mtx->mtx_is_locked = false;
+
+  return mtx;
+}
+
+/**
+ *
+ * @brief   Locks a non recursive mutex.
+ *
+ * @param[in] mtx          pointer to instance of @p struct uvos_mutex
+ * @param[in] timeout_ms   timeout for acquiring the lock in milliseconds
+ *
+ * @returns true on success or false on timeout or failure
+ *
+ */
+bool UVOS_Recursive_Mutex_Lock( struct uvos_recursive_mutex *mtx, uint32_t timeout_ms )
+{
+  UVOS_Assert( mtx != NULL );
+  bool mtx_locked_success = false;
+
+  uint32_t start = UVOS_DELAY_GetRaw();
+
+  uint32_t temp_mtx_locked;
+  do {
+    UVOS_IRQ_Disable();
+    temp_mtx_locked = mtx->mtx_is_locked;
+    if ( ( temp_mtx_locked ) == false ) {
+      mtx->mtx_is_locked = true;
+      mtx_locked_success = true;
+    }
+    UVOS_IRQ_Enable();
+  } while ( mtx_locked_success == false && UVOS_DELAY_DiffuS( start ) < timeout_ms * 1000 );
+
+  return mtx_locked_success;
+}
+
+/**
+ *
+ * @brief   Unlocks a non recursive mutex.
+ *
+ * @param[in] mtx          pointer to instance of @p struct uvos_mutex
+ *
+ * @returns true on success or false on timeout or failure
+ *
+ */
+bool UVOS_Recursive_Mutex_Unlock( struct uvos_recursive_mutex *mtx )
+{
+  UVOS_Assert( mtx != NULL );
+  bool mtx_unlocked_success = true;
+
+  UVOS_IRQ_Disable();
+
+  if ( mtx->mtx_is_locked == true ) {
+    mtx->mtx_is_locked = false;
+  } else {
+    mtx_unlocked_success = false;
+  }
+
+  UVOS_IRQ_Enable();
+
+  return mtx_unlocked_success;
+}
+
 #endif /* defined(UVOS_INCLUDE_IRQ) */
 
