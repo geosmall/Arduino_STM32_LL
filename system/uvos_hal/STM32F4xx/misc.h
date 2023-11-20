@@ -212,11 +212,34 @@ void NVIC_PriorityGroupConfig( uint32_t NVIC_PriorityGroup );
 void NVIC_Init( NVIC_InitTypeDef *NVIC_InitStruct );
 void NVIC_SetVectorTable( uint32_t NVIC_VectTab, uint32_t Offset );
 void NVIC_SystemLPConfig( uint8_t LowPowerMode, FunctionalState NewState );
+
 void SysTick_CLKSourceConfig( uint32_t SysTick_CLKSource );
+
 void DMA_ITConfig( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints, FunctionalState NewState );
-ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int );
-void DMA_ClearITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints );
-void DMA_ClearAllITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream );
+ITStatus DMA_IsActiveFlag( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int );
+void DMA_ClearFlags( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints );
+void DMA_ClearAllFlags( DMA_TypeDef *DMAx, uint32_t Stream );
+int32_t DMA_DisableStreamWaitTimeout( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t timeout_us );
+
+/**
+  * @brief Clear and wait for EN bit in DMA_SxCR register to reset (“0”)
+  * @param  DMAx DMA Instance
+  * @param  Stream This parameter can be one of the following values:
+  *         @arg @ref LL_DMA_STREAM_0
+  *         @arg @ref LL_DMA_STREAM_1
+  *         @arg @ref LL_DMA_STREAM_2
+  *         @arg @ref LL_DMA_STREAM_3
+  *         @arg @ref LL_DMA_STREAM_4
+  *         @arg @ref LL_DMA_STREAM_5
+  *         @arg @ref LL_DMA_STREAM_6
+  *         @arg @ref LL_DMA_STREAM_7
+  * @retval None
+  */
+__STATIC_INLINE void DMA_DisableStreamWait( DMA_TypeDef *DMAx, uint32_t Stream )
+{
+  LL_DMA_DisableStream( DMAx, Stream );
+  while ( LL_DMA_IsEnabledStream( DMAx, Stream ) );
+}
 
 #ifdef __cplusplus
 }

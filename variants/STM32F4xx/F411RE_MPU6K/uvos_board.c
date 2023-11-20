@@ -163,14 +163,26 @@ uintptr_t uvos_user_fs_id;
  * tx size = 0 make the port rx only
  * rx size = 0 make the port tx only
  * having both tx and rx size = 0 is not valid and will fail further down in UVOS_COM_Init()
+ * is usart uses dma tx then a valid uvos_dma_usart_id pointer should be provided, else should be NULL
  */
 static void UVOS_Board_configure_com( const struct uvos_usart_cfg *usart_port_cfg, uint16_t rx_buf_len, uint16_t tx_buf_len,
-                                      const struct uvos_com_driver *com_driver, uint32_t *uvos_com_id )
+                                      const struct uvos_com_driver *com_driver, uint32_t *uvos_com_id, uint32_t *uvos_dma_usart_id )
 {
   uint32_t uvos_usart_id;
 
+  /* Code */
+  if ( usart_port_cfg->use_dma_tx == true ) {
+    UVOS_Assert( uvos_dma_usart_id );
+  } else {
+    UVOS_Assert( uvos_dma_usart_id == NULL );
+  }
+
   if ( UVOS_USART_Init( &uvos_usart_id, usart_port_cfg ) ) {
     UVOS_Assert( 0 );
+  }
+
+  if ( uvos_dma_usart_id ) {
+    *uvos_dma_usart_id = uvos_usart_id;
   }
 
   uint8_t *rx_buffer = 0, * tx_buffer = 0;
@@ -232,11 +244,24 @@ int32_t UVOS_Board_Init( void )
 #endif /* UVOS_INCLUDE_LED */
 
 #if defined( UVOS_INCLUDE_DEBUG_CONSOLE )
+
+#if 0 // gls
   UVOS_Board_configure_com( &uvos_usart_flexi_cfg,
                             UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
                             UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
-                            &uvos_usart_com_driver, &uvos_com_debug_id );
-#endif
+                            &uvos_usart_com_driver,
+                            &uvos_com_debug_id,
+                            NULL );
+#else
+  UVOS_Board_configure_com( &uvos_usart_debug_cfg,
+                            UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
+                            UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
+                            &uvos_usart_com_driver,
+                            &uvos_com_debug_id,
+                            &uvos_dma_usart_debug_id );
+#endif // gls
+
+#endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
   /* Set up the SPI interface to the gyro/acelerometer */
   if ( UVOS_SPI_Init( &uvos_spi_gyro_id, &uvos_spi_gyro_cfg ) ) {

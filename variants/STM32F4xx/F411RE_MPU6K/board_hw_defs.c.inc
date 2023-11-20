@@ -565,12 +565,11 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   },
 };
 
-uint32_t uvos_com_debug_id;
-// static uint32_t uvos_com_debug_id;
+static uint32_t uvos_dma_usart_debug_id;
 void UVOS_USART_debug_dma_irq_handler( void )
 {
   /* Call into the generic code to handle the DMAx IRQ for this specific device */
-  UVOS_USART_generic_dma_irq_handler( uvos_com_debug_id );
+  UVOS_USART_generic_dma_irq_handler( uvos_dma_usart_debug_id );
 }
 
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */

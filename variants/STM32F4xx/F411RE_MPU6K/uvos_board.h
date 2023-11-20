@@ -113,7 +113,7 @@ extern uint32_t uvos_i2c_flexiport_adapter_id;
 //
 // See also uvos_board.c
 // -------------------------
-#define UVOS_USART_MAX_DEVS 5
+#define UVOS_USART_MAX_DEVS 3
 
 // -------------------------
 // UVOS_COM

@@ -94,8 +94,7 @@ int32_t UVOS_COM_Init(uint32_t * com_id, const struct uvos_com_driver * driver, 
     (com_dev->driver->bind_rx_cb)(lower_id, UVOS_COM_RxInCallback, (uint32_t)com_dev);
     if (com_dev->driver->rx_start) {
       /* Start the receiver */
-      (com_dev->driver->rx_start)(com_dev->lower_id,
-                fifoBuf_getFree(&com_dev->rx));
+      (com_dev->driver->rx_start)(com_dev->lower_id, fifoBuf_getFree(&com_dev->rx));
     }
   }
 
@@ -159,7 +158,18 @@ static uint16_t UVOS_COM_RxInCallback(uint32_t context, uint8_t * buf, uint16_t 
   return (bytes_into_fifo);
 }
 
-static uint16_t UVOS_COM_TxOutCallback(uint32_t context, uint8_t * buf, uint16_t buf_len, uint16_t * headroom, bool * need_yield)
+/**
+ * Callback handler from lower level COM driver, manages COM device fifoBuf
+ * This callback gets data from the COM device fifoBuf and copies it into the supplied lower level device buffer.  If
+ * bytes copied is greater than zero it will unblock the COM device Tx.
+ * \param[in] context lower level COM port device id from which callback is called
+ * \param[in] *buf pointer to lower level device buffer
+ * \param[in] buf_len size in bytes of lower level device buffer
+ * \param[in] *headroom the number of bytes available in the COM device fifoBuf
+ * \param[in] *need_yield true if higher priority task has been woken (context switch should be requested before interrupt exits)
+ * \return number of bytes copied from COM device fifoBuf into lower level device buffer
+ */
+static uint16_t UVOS_COM_TxOutCallback( uint32_t context, uint8_t *buf, uint16_t buf_len, uint16_t *headroom, bool *need_yield )
 {
   struct uvos_com_dev * com_dev = (struct uvos_com_dev *)context;
 
@@ -264,8 +274,7 @@ int32_t UVOS_COM_SendBufferNonBlocking(uint32_t com_id, const uint8_t *buffer, u
   if (bytes_into_fifo > 0) {
     /* More data has been put in the tx buffer, make sure the tx is started */
     if (com_dev->driver->tx_start) {
-      com_dev->driver->tx_start(com_dev->lower_id,
-              fifoBuf_getUsed(&com_dev->tx));
+      com_dev->driver->tx_start(com_dev->lower_id, fifoBuf_getUsed(&com_dev->tx));
     }
   }
 
@@ -305,21 +314,22 @@ int32_t UVOS_COM_SendBuffer(uint32_t com_id, const uint8_t *buffer, uint16_t len
     } else {
       frag_size = bytes_to_send;
     }
-    int32_t rc = UVOS_COM_SendBufferNonBlocking(com_id, buffer, frag_size);
-    if (rc >= 0) {
-      bytes_to_send -= rc;
-      buffer += rc;
+    int32_t ret_code = UVOS_COM_SendBufferNonBlocking(com_id, buffer, frag_size);
+    /* ret_code >= 0 is number of bytes transmitted on success */
+    if (ret_code >= 0) {
+      bytes_to_send -= ret_code;
+      buffer += ret_code;
+    /* ret_code < 0 is error of some form */
     } else {
-      switch (rc) {
+      switch (ret_code) {
       case -1:
-        /* Device is invalid, this will never work */
+        /* Device is invalid, this will never send */
         return -1;
       case -2:
         /* Device is busy, wait for the underlying device to free some space and retry */
         /* Make sure the transmitter is running while we wait */
         if (com_dev->driver->tx_start) {
-          (com_dev->driver->tx_start)(com_dev->lower_id,
-                fifoBuf_getUsed(&com_dev->tx));
+          (com_dev->driver->tx_start)(com_dev->lower_id, fifoBuf_getUsed(&com_dev->tx));
         }
 // #if defined(UVOS_INCLUDE_FREERTOS) || defined(UVOS_INCLUDE_CHIBIOS)
         if (UVOS_Semaphore_Take(com_dev->tx_sem, 5000) != true) {
@@ -329,7 +339,7 @@ int32_t UVOS_COM_SendBuffer(uint32_t com_id, const uint8_t *buffer, uint16_t len
         continue;
       default:
         /* Unhandled return code */
-        return rc;
+        return ret_code;
       }
     }
   }

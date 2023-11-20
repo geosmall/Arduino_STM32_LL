@@ -305,9 +305,9 @@ void DMA_ITConfig( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints, Functi
   *            @arg UVOS_DMA_IT_TE:  Stream transfer error interrupt
   *            @arg UVOS_DMA_IT_DME: Stream direct mode error interrupt
   *            @arg UVOS_DMA_IT_FE:  Stream FIFO error interrupt
-  * @retval The new state of DMA_IT (SET or RESET).
+  * @retval The new state of DMA_IT (ITStatus, set to either SET or RESET).
   */
-ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int )
+ITStatus DMA_IsActiveFlag( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int )
 {
   ITStatus bitstatus = RESET;
   uint32_t tmpreg = 0;
@@ -356,7 +356,7 @@ ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int )
   }
 
   /* Return the DMA_IT status */
-  return  bitstatus;
+  return bitstatus;
 }
 
 /**
@@ -381,7 +381,7 @@ ITStatus DMA_GetITStatus( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_int )
   *          Note that UVOS_DMA_IT_XX values are same as UVOS_DMA_IFLG_XXIF
   * @retval None
   */
-void DMA_ClearITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints )
+void DMA_ClearFlags( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_ints )
 {
   /* Check the parameters */
   UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
@@ -413,7 +413,7 @@ void DMA_ClearITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t DMA_in
   *         @arg @ref LL_DMA_STREAM_7
   * @retval None
   */
-void DMA_ClearAllITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream )
+void DMA_ClearAllFlags( DMA_TypeDef *DMAx, uint32_t Stream )
 {
   /* Check the parameters */
   UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
@@ -430,6 +430,39 @@ void DMA_ClearAllITPendingBits( DMA_TypeDef *DMAx, uint32_t Stream )
   }
 }
 
+/**
+  * @brief Clear and wait a specified duration for EN bit in DMA_SxCR register to reset (“0”)
+  * @param  DMAx DMA Instance
+  * @param  Stream This parameter can be one of the following values:
+  *         @arg @ref LL_DMA_STREAM_0
+  *         @arg @ref LL_DMA_STREAM_1
+  *         @arg @ref LL_DMA_STREAM_2
+  *         @arg @ref LL_DMA_STREAM_3
+  *         @arg @ref LL_DMA_STREAM_4
+  *         @arg @ref LL_DMA_STREAM_5
+  *         @arg @ref LL_DMA_STREAM_6
+  *         @arg @ref LL_DMA_STREAM_7
+  * @retval 0 on successful EN reset, -1 on timeout.
+  */
+int32_t DMA_DisableStreamWaitTimeout( DMA_TypeDef *DMAx, uint32_t Stream, uint32_t timeout_us )
+{
+  /* Check the parameters */
+  UVOS_Assert( UVOS_DMA_IS_INSTANCE( DMAx ) );
+  UVOS_Assert( UVOS_DMA_IS_STREAM( Stream ) );
+
+  uint32_t start = UVOS_DELAY_GetRaw();
+
+  LL_DMA_DisableStream( DMAx, Stream );
+  /* Wait until EN bit in DMA_SxCR register is reset (“0”) or timeout reached. */
+  do {
+    if ( LL_DMA_IsEnabledStream( DMAx, Stream ) == 0 ) {
+      return 0;
+    }
+  } while ( UVOS_DELAY_DiffuS( start ) < timeout_us );
+
+  /* Timed out */
+  return -1;
+}
 
 // End DMA helper functions -----------------------------------<<<
 
