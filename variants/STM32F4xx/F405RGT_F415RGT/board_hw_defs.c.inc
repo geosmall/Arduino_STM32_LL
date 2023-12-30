@@ -393,6 +393,7 @@ static const struct flashfs_logfs_cfg flashfs_external_system_cfg = {
  */
 static const struct uvos_usart_cfg uvos_usart_main_cfg = {
   .regs  = USART1,
+  .use_dma_tx = false,
   .init  = {
     .BaudRate            = 57600,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
@@ -440,6 +441,7 @@ static const struct uvos_usart_cfg uvos_usart_main_cfg = {
  */
 static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
   .regs  = USART2,
+  .use_dma_tx = false,
   .init  = {
     .BaudRate            = 57600,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
@@ -489,7 +491,7 @@ static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
 static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   .regs  = USART6,
   .init  = {
-    .BaudRate            = 57600,
+    .BaudRate            = 115200,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
     .StopBits            = LL_USART_STOPBITS_1,
     .Parity              = LL_USART_PARITY_NONE,

@@ -236,7 +236,7 @@ static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
     .ClockPolarity = LL_SPI_POLARITY_LOW,
     .ClockPhase = LL_SPI_PHASE_1EDGE,
     .NSS = LL_SPI_NSS_SOFT,
-    .BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV8,
+    .BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV128,
     .BitOrder = LL_SPI_MSB_FIRST,
     .CRCCalculation = LL_SPI_CRCCALCULATION_DISABLE,
     .CRCPoly = 7,
@@ -248,12 +248,11 @@ static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
       .flags = ( DMA_LISR_TCIF0 | DMA_LISR_TEIF0 | DMA_LISR_HTIF0 ),
       .init  = {
         .NVIC_IRQChannel    = DMA1_Stream0_IRQn,
-        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
+        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd = ENABLE,
       },
     },
-
     .rx                                        = {
       .DMAx = DMA1,
       .stream = LL_DMA_STREAM_0,
@@ -393,6 +392,7 @@ static const struct flashfs_logfs_cfg flashfs_external_system_cfg = {
  */
 static const struct uvos_usart_cfg uvos_usart_main_cfg = {
   .regs  = USART1,
+  .use_dma_tx = false,
   .init  = {
     .BaudRate            = 57600,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
@@ -440,6 +440,7 @@ static const struct uvos_usart_cfg uvos_usart_main_cfg = {
  */
 static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
   .regs  = USART3,
+  .use_dma_tx = false,
   .init  = {
     .BaudRate            = 57600,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
@@ -486,10 +487,13 @@ static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
 /*
  * DEBUG PORT
  */
+void UVOS_USART_debug_dma_irq_handler( void );
+void DMA1_Stream6_IRQHandler( void ) __attribute__( ( alias( "UVOS_USART_debug_dma_irq_handler" ) ) );
 static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   .regs  = USART3,
+  .use_dma_tx = true,
   .init  = {
-    .BaudRate            = 57600,
+    .BaudRate            = 115200,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
     .StopBits            = LL_USART_STOPBITS_1,
     .Parity              = LL_USART_PARITY_NONE,
@@ -502,6 +506,39 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
       .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
       .NVIC_IRQChannelSubPriority        = 0,
       .NVIC_IRQChannelCmd = ENABLE,
+    },
+  },
+  .dma_tx  = {
+    .irq                                       = {
+      // Note this is the Stream ID that triggers interrupts (in this case TX)
+      .flags = ( DMA_LISR_TCIF3 | DMA_LISR_TEIF3 | DMA_LISR_HTIF3 ),
+      .init  = {
+        .NVIC_IRQChannel    = DMA1_Stream3_IRQn,
+        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
+        .NVIC_IRQChannelSubPriority        = 0,
+        .NVIC_IRQChannelCmd = ENABLE,
+      },
+    },
+    .tx                                        = {
+      .DMAx = DMA1,
+      .stream = LL_DMA_STREAM_3,
+      .init    = {
+        .Channel = LL_DMA_CHANNEL_4,
+        .PeriphOrM2MSrcAddress = ( uint32_t ) & ( USART3->DR ),
+        .MemoryOrM2MDstAddress = ( uint32_t ) NULL,
+        .Direction = LL_DMA_DIRECTION_MEMORY_TO_PERIPH,
+        .Mode = LL_DMA_MODE_NORMAL,
+        .PeriphOrM2MSrcIncMode = LL_DMA_PERIPH_NOINCREMENT,
+        .MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT,
+        .PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE,
+        .MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_BYTE,
+        .NbData = ( uint32_t ) NULL,
+        .Priority = LL_DMA_PRIORITY_MEDIUM,
+        .FIFOMode = LL_DMA_FIFOMODE_DISABLE,
+        .FIFOThreshold = LL_DMA_FIFOTHRESHOLD_FULL,
+        .MemBurst = LL_DMA_MBURST_SINGLE,
+        .PeriphBurst = LL_DMA_PBURST_SINGLE,
+      },
     },
   },
   .rx                                        = {
@@ -528,6 +565,13 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   },
 };
 
+static uint32_t uvos_dma_usart_debug_id;
+void UVOS_USART_debug_dma_irq_handler( void )
+{
+  /* Call into the generic code to handle the DMAx IRQ for this specific device */
+  UVOS_USART_generic_dma_irq_handler( uvos_dma_usart_debug_id );
+}
+
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
 #if defined(UVOS_INCLUDE_IBUS)
@@ -538,6 +582,7 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
 
 static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
   .regs  = USART1,
+  .use_dma_tx = false,
   .init  = {
     .BaudRate            = 115200,
     .DataWidth           = LL_USART_DATAWIDTH_8B,

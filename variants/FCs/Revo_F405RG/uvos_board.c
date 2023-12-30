@@ -94,9 +94,9 @@ static const struct uvos_exti_cfg uvos_exti_mpu6000_cfg __exti_config = {
 static const struct uvos_mpu6000_cfg uvos_mpu6000_cfg = {
   .exti_cfg   = &uvos_exti_mpu6000_cfg,
   .Fifo_store = UVOS_MPU6000_FIFO_TEMP_OUT | UVOS_MPU6000_FIFO_GYRO_X_OUT | UVOS_MPU6000_FIFO_GYRO_Y_OUT | UVOS_MPU6000_FIFO_GYRO_Z_OUT,
-  // Clock at 8 khz
+  // Gyroscope Output Rate = 8kHz when DLPF is disabled
   .Smpl_rate_div_no_dlp = 0,
-  // with dlp on output rate is 1000Hz
+  // Gyroscope Output Rate = 1kHz when DLPF is enabled (see CONFIG Register 0x1A).
   .Smpl_rate_div_dlp    = 0,
   .interrupt_cfg  = UVOS_MPU6000_INT_CLR_ANYRD,
   .interrupt_en   = 0,
@@ -155,14 +155,26 @@ uintptr_t uvos_user_fs_id;
  * tx size = 0 make the port rx only
  * rx size = 0 make the port tx only
  * having both tx and rx size = 0 is not valid and will fail further down in UVOS_COM_Init()
+ * if usart uses dma tx then a valid uvos_dma_usart_id pointer should be provided, else should be NULL
  */
 static void UVOS_Board_configure_com( const struct uvos_usart_cfg *usart_port_cfg, uint16_t rx_buf_len, uint16_t tx_buf_len,
-                                      const struct uvos_com_driver *com_driver, uint32_t *uvos_com_id )
+                                      const struct uvos_com_driver *com_driver, uint32_t *uvos_com_id, uint32_t *uvos_dma_usart_id )
 {
   uint32_t uvos_usart_id;
 
+  /* Code */
+  if ( usart_port_cfg->use_dma_tx == true ) {
+    UVOS_Assert( uvos_dma_usart_id );
+  } else {
+    UVOS_Assert( uvos_dma_usart_id == NULL );
+  }
+
   if ( UVOS_USART_Init( &uvos_usart_id, usart_port_cfg ) ) {
     UVOS_Assert( 0 );
+  }
+
+  if ( uvos_dma_usart_id ) {
+    *uvos_dma_usart_id = uvos_usart_id;
   }
 
   uint8_t *rx_buffer = 0, * tx_buffer = 0;
@@ -224,11 +236,24 @@ int32_t UVOS_Board_Init( void )
 #endif /* UVOS_INCLUDE_LED */
 
 #if defined( UVOS_INCLUDE_DEBUG_CONSOLE )
+
+#if 0 // gls
+  UVOS_Board_configure_com( &uvos_usart_flexi_cfg,
+                            UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
+                            UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
+                            &uvos_usart_com_driver,
+                            &uvos_com_debug_id,
+                            NULL );
+#else
   UVOS_Board_configure_com( &uvos_usart_debug_cfg,
                             UVOS_COM_DEBUGCONSOLE_RX_BUF_LEN,
                             UVOS_COM_DEBUGCONSOLE_TX_BUF_LEN,
-                            &uvos_usart_com_driver, &uvos_com_debug_id );
-#endif
+                            &uvos_usart_com_driver,
+                            &uvos_com_debug_id,
+                            &uvos_dma_usart_debug_id );
+#endif // gls
+
+#endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
   /* Set up the SPI interface to the gyro/acelerometer */
   if ( UVOS_SPI_Init( &uvos_spi_gyro_id, &uvos_spi_gyro_cfg ) ) {
@@ -248,14 +273,8 @@ int32_t UVOS_Board_Init( void )
     return -2;
   }
 
-// #define ERASE_SYSTEM_FLASH
 #if defined( ERASE_SYSTEM_FLASH )
-  extern uvos_spif_jedec_id;
-  UVOS_Flash_Jedec_EraseChip( uvos_spif_jedec_id );
-  ret = UVOS_SPIF_Format();
-  if ( ret < 0 ) {
-    return -2;
-  }
+  UVOS_Flash_Jedec_EraseChip( uvos_spi_flash_id );
 #endif // defined( ERASE_SYSTEM_FLASH )
 
   /* Set up the file sysytem interface */
@@ -297,11 +316,11 @@ int32_t UVOS_Board_Init( void )
 #endif // defined( UVOS_INCLUDE_SCHED )
 
   /* Set up pulse timers */
-  UVOS_TIM_InitClock( &tim_1_cfg );
-  // UVOS_TIM_InitClock( &tim_2_cfg );
+  // UVOS_TIM_InitClock( &tim_1_cfg );
+  UVOS_TIM_InitClock( &tim_2_cfg );
   UVOS_TIM_InitClock( &tim_3_cfg );
-  // UVOS_TIM_InitClock( &tim_5_cfg );
-  // UVOS_TIM_InitClock( &tim_9_cfg );
+  UVOS_TIM_InitClock( &tim_5_cfg );
+  UVOS_TIM_InitClock( &tim_9_cfg );
   // UVOS_TIM_InitClock( &tim_10_cfg );
   // UVOS_TIM_InitClock( &tim_11_cfg );
 
@@ -318,9 +337,10 @@ int32_t UVOS_Board_Init( void )
 
 #if defined(UVOS_INCLUDE_MPU6000)
   /* Initialize IMU, initial settings per uvos_mpu6000_cfg defined above */
-  UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
-  /* Configure settings */
-  // UVOS_MPU6000_CONFIG_Configure();
+  ret = UVOS_MPU6000_Init( uvos_spi_gyro_id, 0, &uvos_mpu6000_cfg );
+  if ( ret < 0 ) {
+    return -4;
+  }
   /* Register MPU6000 as a sensor via UVOS_SENSORS_Register() */
   UVOS_MPU6000_Register();
 #endif

@@ -133,14 +133,6 @@ uint32_t uvos_rcvr_group_map[ UVOS_RCVR_CHANNELGROUPS_NONE ];
 uint32_t uvos_com_debug_id;
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
-// #if defined(UVOS_INCLUDE_FLASH)
-// uintptr_t uvos_spi_flash_id;
-// #endif /* UVOS_INCLUDE_FLASH */
-
-// #if defined( UVOS_INCLUDE_SDCARD )
-// uintptr_t uvos_spi_sdcard_id;
-// #endif /* UVOS_INCLUDE_SDCARD */
-
 // uint32_t uvos_com_gps_id       = 0;
 // uint32_t uvos_com_telem_usb_id = 0;
 uint32_t uvos_com_telem_rf_id  = 0;
@@ -163,7 +155,7 @@ uintptr_t uvos_user_fs_id;
  * tx size = 0 make the port rx only
  * rx size = 0 make the port tx only
  * having both tx and rx size = 0 is not valid and will fail further down in UVOS_COM_Init()
- * is usart uses dma tx then a valid uvos_dma_usart_id pointer should be provided, else should be NULL
+ * if usart uses dma tx then a valid uvos_dma_usart_id pointer should be provided, else should be NULL
  */
 static void UVOS_Board_configure_com( const struct uvos_usart_cfg *usart_port_cfg, uint16_t rx_buf_len, uint16_t tx_buf_len,
                                       const struct uvos_com_driver *com_driver, uint32_t *uvos_com_id, uint32_t *uvos_dma_usart_id )

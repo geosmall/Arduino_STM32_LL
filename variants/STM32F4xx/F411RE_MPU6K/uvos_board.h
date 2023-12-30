@@ -146,16 +146,6 @@ extern uint32_t uvos_com_debug_id;
 #define UVOS_COM_DEBUG     (uvos_com_debug_id)
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
-// #if defined(UVOS_INCLUDE_FLASH)
-// extern uintptr_t uvos_spi_flash_id;
-// #define UVOS_FLASH_SPI_PORT (uvos_spi_flash_id)
-// #endif /* UVOS_INCLUDE_FLASH */
-
-// #if defined(UVOS_INCLUDE_SDCARD)
-// extern uintptr_t uvos_spi_flash_id;
-// #define UVOS_SDCARD_SPI_PORT (uvos_spi_sdcard_id)
-// #endif /* UVOS_INCLUDE_FLASH */
-
 // -------------------------
 // Packet Handler
 // -------------------------
