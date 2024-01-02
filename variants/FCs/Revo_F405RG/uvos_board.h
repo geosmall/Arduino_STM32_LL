@@ -188,9 +188,10 @@ extern uint32_t uvos_packet_handler;
 #define UVOS_PERIPHERAL_APB1_CLOCK          (UVOS_SYSCLK / 4)
 #define UVOS_PERIPHERAL_APB1_TIMER_CLOCK     UVOS_SYSCLK / 2
 
-// Peripherals belonging to APB2 (PCLK2):
-// SDIO       |EXTI         |SYSCFG
-// SPI1       |ADC1,2,3     |USART1,6
+// Peripherals belonging to APB2 (PCLK2)
+// SDIO     |EXTI       |SYSCFG     |SPI1
+// ADC1,2,3
+// USART1,6
 // TIM1,8,9,10,11
 //
 // Default APB2 Prescaler = 2, APB2 Timer clock x2 multiplier

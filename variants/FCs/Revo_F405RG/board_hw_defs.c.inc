@@ -248,11 +248,12 @@ static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
       .flags = ( DMA_LISR_TCIF0 | DMA_LISR_TEIF0 | DMA_LISR_HTIF0 ),
       .init  = {
         .NVIC_IRQChannel    = DMA1_Stream0_IRQn,
-        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
+        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_HIGH,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd = ENABLE,
       },
     },
+
     .rx                                        = {
       .DMAx = DMA1,
       .stream = LL_DMA_STREAM_0,
@@ -488,7 +489,7 @@ static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
  * DEBUG PORT
  */
 void UVOS_USART_debug_dma_irq_handler( void );
-void DMA1_Stream6_IRQHandler( void ) __attribute__( ( alias( "UVOS_USART_debug_dma_irq_handler" ) ) );
+void DMA1_Stream3_IRQHandler( void ) __attribute__( ( alias( "UVOS_USART_debug_dma_irq_handler" ) ) );
 static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   .regs  = USART3,
   .use_dma_tx = true,

@@ -236,7 +236,7 @@ static const struct uvos_spi_cfg uvos_spi_storage_cfg = {
     .ClockPolarity = LL_SPI_POLARITY_LOW,
     .ClockPhase = LL_SPI_PHASE_1EDGE,
     .NSS = LL_SPI_NSS_SOFT,
-    .BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV8,
+    .BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV128,
     .BitOrder = LL_SPI_MSB_FIRST,
     .CRCCalculation = LL_SPI_CRCCALCULATION_DISABLE,
     .CRCPoly = 7,
@@ -488,8 +488,11 @@ static const struct uvos_usart_cfg uvos_usart_flexi_cfg = {
 /*
  * DEBUG PORT
  */
+void UVOS_USART_debug_dma_irq_handler( void );
+void DMA2_Stream6_IRQHandler( void ) __attribute__( ( alias( "UVOS_USART_debug_dma_irq_handler" ) ) );
 static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   .regs  = USART6,
+  .use_dma_tx = true,
   .init  = {
     .BaudRate            = 115200,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
@@ -504,6 +507,39 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
       .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
       .NVIC_IRQChannelSubPriority        = 0,
       .NVIC_IRQChannelCmd = ENABLE,
+    },
+  },
+  .dma_tx  = {
+    .irq                                       = {
+      // Note this is the Stream ID that triggers interrupts (in this case TX)
+      .flags = ( DMA_HISR_TCIF6 | DMA_HISR_TEIF6 | DMA_HISR_HTIF6 ),
+      .init  = {
+        .NVIC_IRQChannel    = DMA2_Stream6_IRQn,
+        .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
+        .NVIC_IRQChannelSubPriority        = 0,
+        .NVIC_IRQChannelCmd = ENABLE,
+      },
+    },
+    .tx                                        = {
+      .DMAx = DMA2,
+      .stream = LL_DMA_STREAM_6,
+      .init    = {
+        .Channel = LL_DMA_CHANNEL_5,
+        .PeriphOrM2MSrcAddress = ( uint32_t ) & ( USART6->DR ),
+        .MemoryOrM2MDstAddress = ( uint32_t ) NULL,
+        .Direction = LL_DMA_DIRECTION_MEMORY_TO_PERIPH,
+        .Mode = LL_DMA_MODE_NORMAL,
+        .PeriphOrM2MSrcIncMode = LL_DMA_PERIPH_NOINCREMENT,
+        .MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT,
+        .PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE,
+        .MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_BYTE,
+        .NbData = ( uint32_t ) NULL,
+        .Priority = LL_DMA_PRIORITY_MEDIUM,
+        .FIFOMode = LL_DMA_FIFOMODE_DISABLE,
+        .FIFOThreshold = LL_DMA_FIFOTHRESHOLD_FULL,
+        .MemBurst = LL_DMA_MBURST_SINGLE,
+        .PeriphBurst = LL_DMA_PBURST_SINGLE,
+      },
     },
   },
   .rx                                        = {
@@ -530,6 +566,13 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
   },
 };
 
+static uint32_t uvos_dma_usart_debug_id;
+void UVOS_USART_debug_dma_irq_handler( void )
+{
+  /* Call into the generic code to handle the DMAx IRQ for this specific device */
+  UVOS_USART_generic_dma_irq_handler( uvos_dma_usart_debug_id );
+}
+
 #endif /* UVOS_INCLUDE_DEBUG_CONSOLE */
 
 #if defined(UVOS_INCLUDE_IBUS)
@@ -540,6 +583,7 @@ static const struct uvos_usart_cfg uvos_usart_debug_cfg = {
 
 static const struct uvos_usart_cfg uvos_usart_ibus_cfg = {
   .regs  = USART1,
+  .use_dma_tx = false,
   .init  = {
     .BaudRate            = 115200,
     .DataWidth           = LL_USART_DATAWIDTH_8B,
@@ -719,6 +763,19 @@ static const struct uvos_tim_clock_cfg tim_11_cfg = {
   .irq   = {
     .init                                  = {
       .NVIC_IRQChannel    = TIM1_TRG_COM_TIM11_IRQn,
+      .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
+      .NVIC_IRQChannelSubPriority        = 0,
+      .NVIC_IRQChannelCmd = ENABLE,
+    },
+  },
+};
+
+static const struct uvos_tim_clock_cfg tim_12_cfg = {
+  .timer = TIM12,
+  .time_base_init                            = &tim_2_3_4_5_12_time_base,
+  .irq   = {
+    .init                                  = {
+      .NVIC_IRQChannel    = TIM8_BRK_TIM12_IRQn,
       .NVIC_IRQChannelPreemptionPriority = UVOS_IRQ_PRIO_MID,
       .NVIC_IRQChannelSubPriority        = 0,
       .NVIC_IRQChannelCmd = ENABLE,

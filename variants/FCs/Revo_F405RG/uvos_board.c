@@ -273,8 +273,14 @@ int32_t UVOS_Board_Init( void )
     return -2;
   }
 
+// #define ERASE_SYSTEM_FLASH
 #if defined( ERASE_SYSTEM_FLASH )
-  UVOS_Flash_Jedec_EraseChip( uvos_spi_flash_id );
+  extern uintptr_t uvos_spif_jedec_id;
+  UVOS_Flash_Jedec_EraseChip( uvos_spif_jedec_id );
+  ret = UVOS_SPIF_Format();
+  if ( ret < 0 ) {
+    return -2;
+  }
 #endif // defined( ERASE_SYSTEM_FLASH )
 
   /* Set up the file sysytem interface */
